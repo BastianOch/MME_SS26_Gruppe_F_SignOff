@@ -1,11 +1,21 @@
+import Sidebar from './components/Sidebar'
+
 function App() {
   return (
     <div className="bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold text-center pt-10 text-blue-600">
-        SignOff Setup Complete!
-      </h1>
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto p-6">
+        <header className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+        </header>
+
+        <div className="border-4 border-dashed border-gray-200 rounded-xl h-96 flex items-center justify-center">
+          <p className="text-gray-500">Main content </p>
+        </div>
+      </main>
+
     </div>
-  )
+  );
 }
 
 export default App
