@@ -1,7 +1,7 @@
 function DocumentHistoryPage() {
   return (
     <main>
-      <h1>Profil</h1>
+      <h1>Dokumentenhistorie</h1>
       <p>Hier wird später die Dokumentenhistorie angezeigt.</p>
     </main>
   )
