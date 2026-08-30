@@ -46,16 +46,15 @@ function Sidebar() {
 
       <NavLink
         to="/profil"
-        className="p-4 border-t border-gray-200 hover:bg-gray-100"
-      >
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-gray-300 rounded-full shrink-0" />
+        className="p-4 border-t border-gray-200 hover:bg-gray-50 transition-colors">
+        <div className=" gap-3">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-semibold shrink-0" />
 
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-800">
-              Max Mustermann
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-800 truncate">
+              Tung Tung Sahur
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 truncate">
               Student
             </p>
           </div>
