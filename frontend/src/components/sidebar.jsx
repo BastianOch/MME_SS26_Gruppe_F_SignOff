@@ -22,21 +22,25 @@ function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-4">
+      <nav className="flex-1 px-4 py-6 space-y-1">
         <NavLink to="/" end className={linkClasses}>
-          Dashboard
+          <LayoutDashboard className="w-5 h-5 shrink-0" />
+          <span>Dashboard</span>
         </NavLink>
 
         <NavLink to="/protokolle" className={linkClasses}>
-          Protokolle
+          <FileText className="w-5 h-5 shrink-0" />
+          <span>Protokolle</span>
         </NavLink>
 
         <NavLink to="/aufgaben" className={linkClasses}>
-          Aufgaben
+          <CheckSquare className="w-5 h-5 shrink-0" />
+          <span>Aufgaben</span>
         </NavLink>
 
         <NavLink to="/dokumente" className={linkClasses}>
-          Dokumente
+          <FolderArchive className="w-5 h-5 shrink-0" />
+          <span>Dokumente</span>
         </NavLink>
       </nav>
 
