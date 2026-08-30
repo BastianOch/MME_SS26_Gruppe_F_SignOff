@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router'
-import { LayoutDashboard, FileText, CheckSquare, FolderArchive } from 'lucide-react'
+import { LayoutDashboard, FileText, CheckSquare, FolderArchive, FileSignature } from 'lucide-react'
 
 const linkClasses = ({ isActive }) =>
   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
@@ -47,7 +47,7 @@ function Sidebar() {
       <NavLink
         to="/profil"
         className="p-4 border-t border-gray-200 hover:bg-gray-50 transition-colors">
-        <div className=" gap-3">
+        <div className=" flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-semibold shrink-0" />
 
           <div className="flex-1 min-w-0">
