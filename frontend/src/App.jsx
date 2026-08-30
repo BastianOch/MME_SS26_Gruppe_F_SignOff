@@ -1,21 +1,27 @@
+import { Routes, Route } from 'react-router'
 import Sidebar from './components/Sidebar'
+import DashboardPage from './pages/DashboardPage'
+import ProfilePage from './pages/ProfilePage'
+import NewProtocolPage from './pages/NewProtocolPage'
+import ProtocolsPage from './pages/ProtocolsPage'
+import TasksBoardPage from './pages/TasksBoardPage'
+import DocumentHistoryPage from './pages/DocumentHistoryPage'
 
 function App() {
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="flex bg-gray-100 min-h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto p-6">
-        <header className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-        </header>
 
-        <div className="border-4 border-dashed border-gray-200 rounded-xl h-96 flex items-center justify-center">
-          <p className="text-gray-500">Main content </p>
-        </div>
-      </main>
-
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/profil" element={<ProfilePage />} />
+        <Route path="/protokolle" element={<ProtocolsPage />} />
+        <Route path="/protokolle/neu" element={<NewProtocolPage />} />
+        <Route path="/aufgaben" element={<TasksBoardPage />} />
+        <Route path="/dokumente" element={<DocumentHistoryPage />} />
+      </Routes>
     </div>
-  );
+  )
 }
 
 export default App
