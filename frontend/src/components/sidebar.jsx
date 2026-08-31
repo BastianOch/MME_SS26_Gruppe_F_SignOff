@@ -26,40 +26,39 @@ function Sidebar() {
           <p className="text-xs text-gray-400 font-medium">MME SS26 Gruppe F</p>
         </div>
       </div>
-      // Navigation section with links to different parts of the application
+      {/* // Navigation section with links to different parts of the application */}
       <nav className="flex-1 px-4 py-6 space-y-1">
         <NavLink to="/" end className={linkClasses}>
           <LayoutDashboard className="w-5 h-5 shrink-0" />
           <span>Dashboard</span>
         </NavLink>
-      // Protocol section
+        {/* // Protocol section */}
         <NavLink to="/protokolle" className={linkClasses}>
           <FileText className="w-5 h-5 shrink-0" />
           <span>Protokolle</span>
         </NavLink>
-      // Aufgaben section
+        {/* // Aufgaben section */}
         <NavLink to="/aufgaben" className={linkClasses}>
           <CheckSquare className="w-5 h-5 shrink-0" />
           <span className="flex-1 min-w-0">Aufgaben</span>
-          // Aufgaben counter for assignments that still need to be completed
+          {/* // Aufgaben counter for assignments that still need to be completed */}
           <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800" >
-            Bisher noch keine!
+            {openTaskCount}
           </span>
         </NavLink>
-      // Dokumente section
+        {/* // Dokumente section */}
         <NavLink to="/dokumente" className={linkClasses}>
           <FolderArchive className="w-5 h-5 shrink-0" />
           <span>Dokumente</span>
         </NavLink>
       </nav>
-    // Profile section
+      {/* // Profile section */}
       <NavLink
         to="/profil"
         className="p-4 border-t border-gray-200 hover:bg-gray-50 transition-colors">
         <div className=" flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-semibold shrink-0" />
-
-          <div className="flex-1 min-w-0">
+          <div className="flex items center gap-3">
             <p className="text-sm font-medium text-gray-800 truncate">
               Tung Tung Sahur
             </p>
