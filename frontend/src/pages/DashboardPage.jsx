@@ -63,6 +63,22 @@ function DashboardPage() {
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
         <CheckSquare className="w-6 h-6" />
       </div>
+      {/* // For the grids AI was used to help figuring out a proffessional locking layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* // Setting up a progress bar for tracking the milestone progress */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 flex flex-col justify">
+          <div>
+            {/* // Title for the progress bar */}
+            {/* // Title design is based on a common design philosophy called the "Eyebrow" where small uppercase titels are placed upon bodies of information
+            // This serves as a sort of badge or pointer for the user information which makes the box as a whole more structured
+            // This contrast between little uppercase titles (label) and large and bold bodies of text (content) helps the user by highlighting their data */}
+            <p classname="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Gesammelte Meilensteine!
+            </p>
+            
+          </div>
+        </div>
+      </div>
 
     </main >
   )
