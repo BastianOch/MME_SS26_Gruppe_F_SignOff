@@ -75,7 +75,11 @@ function DashboardPage() {
             <p classname="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Gesammelte Meilensteine!
             </p>
-            
+            <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200"></div>
+            <div
+              className="bg-blue-600 h-full rounded-full transition-all duration-500"
+              style={{ width: `${milestoneProgress}%` }}
+            />
           </div>
         </div>
       </div>
