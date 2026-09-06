@@ -111,7 +111,7 @@ function DashboardPage() {
               {lastMeeting.date}
             </p>
           </div>
-          {/* //Click button for viewing the protocol */}
+          {/* //button for viewing the protocol */}
           <Link
             to="/protokolle"
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 transition-colors flex items-center gap-2"
@@ -119,6 +119,22 @@ function DashboardPage() {
             <FileText className="w-4 h-4 text-gray-600" />
             <span>Protokoll ansehen</span>
           </Link>
+        </div>
+      </div>
+      {/* Roadmap detailing the "Meilenstein"-Progress
+      The idea here is that using the .map() method to create stepper-lists */}
+      {/* Every step such as current, complete, etc. gets checked using ternary operators linked to a specific action */}
+      <div className="bg-white p-6 md:p-8 rounded-xl border border-gray-200 shadow-sm mt-6">
+        {/* Eyebrow Title of the following roadmap */}
+        <p className="text-xs font-semibold text-gray-200 uppercase tracking-wider mb-4">
+          Fortschritte
+        </p>
+        {/* Using a stepper-container for line positioning */}
+        <div className="relative flex items-center justify-between">
+          {/* Drawing a line at the absolute bottom -> z-0 */}
+        <div className="absolute left-0 top-4 w-full h-1 bg-gray-300 z-0">
+
+        </div>
         </div>
       </div>
     </main >
