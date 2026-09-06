@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router'
+import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, FileText, CheckSquare, FolderArchive, FileSignature } from 'lucide-react'
+
 
 // Function to determine the classes for the navigation links based on their active state
 const linkClasses = ({ isActive }) =>
@@ -43,7 +44,7 @@ function Sidebar() {
           <span className="flex-1 min-w-0">Aufgaben</span>
           {/* // Aufgaben counter for assignments that still need to be completed */}
           <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800" >
-            {openTaskCount}
+            67
           </span>
         </NavLink>
         {/* // Dokumente section */}
@@ -58,7 +59,7 @@ function Sidebar() {
         className="p-4 border-t border-gray-200 hover:bg-gray-50 transition-colors">
         <div className=" flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-semibold shrink-0" />
-          <div className="flex items center gap-3">
+          <div className="flex-items center gap-3">
             <p className="text-sm font-medium text-gray-800 truncate">
               Tung Tung Sahur
             </p>
