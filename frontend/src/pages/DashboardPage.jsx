@@ -87,11 +87,12 @@ function DashboardPage() {
           <div>
             {/* // Title for the progress bar */}
             {/* // Title design is based on a common design philosophy called the "Eyebrow" where small uppercase titels are placed upon bodies of information
-            // This serves as a sort of badge or pointer for the user information which makes the box as a whole more structured
-            // This contrast between little uppercase titles (label) and large and bold bodies of text (content) helps the user by highlighting their data */}
+            This serves as a sort of badge or pointer for the user information which makes the box as a whole more structured
+            This contrast between little uppercase titles (label) and large and bold bodies of text (content) helps the user by highlighting their data */}
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Gesammelte Meilensteine!
             </p>
+            <p className="text-sm font-medium text-gray-600 mt-3 text-right">{milestoneProgress}% von 100%</p>
             <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200 mt-2">
               <div
                 className="bg-blue-600 h-full rounded-full transition-all duration-500"
@@ -100,8 +101,26 @@ function DashboardPage() {
             </div>
           </div>
         </div>
+        {/* Last Meeting */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Letztes Meeting
+            </p>
+            <p className="text-xl font-bold text-gray-900 mt-1">
+              {lastMeeting.date}
+            </p>
+          </div>
+          {/* //Click button for viewing the protocol */}
+          <Link
+            to="/protokolle"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 transition-colors flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4 text-gray-600" />
+            <span>Protokoll ansehen</span>
+          </Link>
+        </div>
       </div>
-
     </main >
   )
 }
