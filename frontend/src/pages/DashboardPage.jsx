@@ -37,15 +37,19 @@ function DashboardPage() {
           Dashboard
         </h1>
       </header>
-      {/* REIHE 1: Das 2er-Grid für Meeting & Aufgaben */}
+      {/* Grid for Meetings and assignments
+      Different Layout for different screens
+      gap-6 is used to create a 24px-distance between the different UI Elements */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* KARTE 1: Nächstes Meeting */}
+        {/* Next meeting*/}
+        {/* Everything here creates a standardized white grid with a grey border
+        flex items-start gap-4 puts the two chid elements next to each other with a 16px distance between them */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4">
           <div className="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Calendar className="w-6 h-6" />
           </div>
-
+          {/* flex-1 makes it so that the textblock takes up the horizontal space of the screen */}
           <div className="flex-1">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Nächstes Meeting
@@ -60,7 +64,9 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* KARTE 2: Offene Aufgaben */}
+        {/* Next up: Offene AUfgaben */}
+        {/* flex items-center justify-between: Creates two vertically centred boxes (Textblock and Icon- Badge) */}
+        {/* The corresponding number for open-tasks is made big using text-4xl font-extrabold */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -112,6 +118,7 @@ function DashboardPage() {
             </p>
           </div>
           {/* //button for viewing the protocol */}
+          {/* This Link To=(...) creates a pathway to a new section without reloading the browser  */}
           <Link
             to="/protokolle"
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 transition-colors flex items-center gap-2"
@@ -126,17 +133,53 @@ function DashboardPage() {
       {/* Every step such as current, complete, etc. gets checked using ternary operators linked to a specific action */}
       <div className="bg-white p-6 md:p-8 rounded-xl border border-gray-200 shadow-sm mt-6">
         {/* Eyebrow Title of the following roadmap */}
-        <p className="text-xs font-semibold text-gray-200 uppercase tracking-wider mb-4">
+        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-4">
           Fortschritte
         </p>
         {/* Using a stepper-container for line positioning */}
         <div className="relative flex items-center justify-between">
           {/* Drawing a line at the absolute bottom -> z-0 */}
-        <div className="absolute left-0 top-4 w-full h-1 bg-gray-300 z-0">
-
-        </div>
+          <div className="absolute left-0 top-4 w-full h-1 bg-gray-300 z-0" />
+          {/* Using the data from the Array above we can organically generate the necessary steps */}
+          {/* The steps.map method creates a new Element for every Array Member */}
+          {steps.map((step, index) => (
+            <div key={index}
+              className="relative z-10 flex flex-col items-center bg-white px-2"
+            >
+              {/* Now assigning an icon to each state */}
+              {/* Lets start with: complete: A green checkmark */}
+              {step.status === 'complete' ? (
+                <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center shadow-xs">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              ) : step.status === 'current' ? (
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs ring-4 ring-blue-100">
+                  <Circle className="w-4 h-4 fill-white" />
+                </div>
+              ) : (<div className="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center border-2 border-white">
+                <Circle className="w-5 h-5" />
+              </div>
+              )}
+              <span
+                className={`text-xs font-medium mt-2 text-center ${step.status === 'complete' || step.status === 'current'
+                  ? 'text-gray-900 font-semibold'
+                  : 'text-gray-400'
+                  }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
+      <Link
+        to="/protokolle/neu"
+        className="w-full py-4 bg-white hover:bg-blue-50 text-blue-600 hover:text-blue-700 text-base font-semibold rounded-xl border-2 border-dashed border-blue-300 hover:border-blue-500 flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer mt-6 block text-center"
+      >
+        {/* Plus-Icon next to the button text */}
+        <PlusCircle className="w-5 h-5 shrink-0" />
+        <span>Neues Meeting - Protokoll erstellen</span>
+      </Link>
     </main >
   )
 }
