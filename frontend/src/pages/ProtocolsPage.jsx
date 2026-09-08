@@ -8,6 +8,7 @@ import {
   Clock,
   FileText,
   ChevronRight,
+  XCircle
 } from 'lucide-react'
 
 function ProtocolsPage() {
@@ -100,10 +101,42 @@ function ProtocolsPage() {
                 </span>
               )}
             </div>
+            {/* Lets start with the META-Data: Date, Location and Attendees */}
+            <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-gray-500 mt-4 pt-4 border-t border-gray-100">
+              {/* Date and Time */}
+              {/* flex-wrap gap-x-6 is very important here: It keeps everything next to each other and fits everything in the available space depending on the screen */}
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span>{protocol.date}, {protocol.time}</span>
+              </div>
+              {/* Location */}
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-gray-400" />
+                <span>Location: {protocol.location}</span>
+              </div>
+              {/* Attendees */}
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-gray-400" />
+                <span>Attendees: {protocol.atendees}</span>
+              </div>
+            </div>
+            {/* On to the summary section: Starting with a short text summary followed by a button to view the protocol in detail */}
+            <p className="text-sm text-gray-600 mt-4">{protocol.summary}</p>
+
+            <div className="mt-4 pt-3 flex justify-end border-t border-gray-50">
+              <Link
+                to={`/protokolle/${protocol.id}`}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg border border-gray-300 transition-colors flex items-center gap-2"
+              >
+                <span>Details ansehen</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
+
         ))}
       </div>
-    </main>
+    </main >
   )
 }
 export default ProtocolsPage
