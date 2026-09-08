@@ -66,8 +66,44 @@ function ProtocolsPage() {
           <span>Neues Protokoll</span>
         </Link>
       </header>
-    </main >
+      {/* Next up: The protocoll list which is rendered with the.map() method */}
+      <div className="space-y-4">
+        {protocols.map((protocol) => (
+          <div
+            key={protocol.id}
+            className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition-all"
+          >
+            {/* Lets start with the header: Icon and Title go on the right and the status icon will be on the right side */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">{protocol.title}</h2>
+              </div>
+              {/* Now lets start setting up the status icon using a ternary operator
+              Here is how it works: If the status is "signed", we will show a green checkmark, if it is "pending", we will show a yellow clock icon, and if it is "rejected", we will show a red cross icon */}
+              {protocol.status === 'signed' ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Signiert
+                </span>
+              ) : protocol.status === 'pending' ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                  <Clock className="w-3.5 h-3.5" />
+                  Ausstehend
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                  <XCircle className="w-3.5 h-3.5" />
+                  Abgelehnt
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   )
 }
-
 export default ProtocolsPage
