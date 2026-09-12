@@ -164,7 +164,7 @@ function NewProtocolPage() {
           />
         </div>
         {/* Next up: Inhalte und Vereinbarungen  */}
-        <div className="bg-white p-6 rounded-xl border border-grey-200 shadow-sm space-y-4">
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
           <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3 flex items-center">
             <FileText className="w-5 h-5 text-blue-600" />
             <span>Inhalte & Vereinbarungen</span>
@@ -172,7 +172,7 @@ function NewProtocolPage() {
           {/* Next up: a quick little summary of everything relevant */}
           <div>
             <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
-              ´Zusammenfassung *
+              Zusammenfassung *
             </label>
             <input
               type="text"
@@ -186,23 +186,23 @@ function NewProtocolPage() {
             />
           </div>
           {/* Next up: Relevant Notes (Textarea) */}
-        </div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-          Notizen
-        </label>
-        {/* // TextArea is commonly used for bigger text inputs, f.e.: comments
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            Notizen
+          </label>
+          {/* // TextArea is commonly used for bigger text inputs, f.e.: comments
         // rows defines the standardized height of the textarea */}
-        <textarea
-          id="notes"
-          name="notes"
-          rows={3}
-          value={formData.notes}
-          onChange={handleChange}
-          placeholder="z.B. Thomas ist ein absoluter Nerd und spielt Age of Empires 24/7"
-          // resize-y allows the user to resize the textarea, but only vertically
-          // This makes for a good design compromize 
-          className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-        />
+          <textarea
+            id="notes"
+            name="notes"
+            rows={3}
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="z.B. Thomas ist ein absoluter Nerd und spielt Age of Empires 24/7"
+            // resize-y allows the user to resize the textarea, but only vertically
+            // This makes for a good design compromize 
+            className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+          />
+        </div>
       </form >
     </main >
   )
