@@ -72,22 +72,99 @@ function NewProtocolPage() {
           </h2>
           {/* Meeting Title */}
           <div>
+            {/* htmlFor="title" replaces the "for" in JavaScript and connects the label with the input field. */}
+            {/* This is important for accessability since the purpose of the input is abundantly clear
+            When the label is clicked the input field will automatically be focused */}
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Notice the *-Symbol as its a equired field */}
               Titel des Meetings *
             </label> <input
               type="text"
               id="title"
+              // This is very important for REACT, since formData gets updated
               name="title"
+              // "required" nudges the user to fill out6 the field. It also adds a red border to the input field
               required
               value={formData.title}
+              // Every keystroke triggers the handleChange function, updating the formData in the progress!
               onChange={handleChange}
-              placeholder="z.B. Meeting 03: Feedback zu Kapitel 2"
+              placeholder="Tung Tung Sahur"
+              // Pretty standard layout for the input fields with a few exceeptions:
+              // w-full makes it so, that the input field takes up 100%  of the available width
+              // focus:outline-none removes the default line when focused by the user!
+              // focus:ring-2 focus:ring-blue-500 adds a nice blue ring around the input field when focused by the user
               className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {/* Now lets build a 3-column-grid layout for Date, Time and Location
+          Design wise the grids have a different appearance depending on the users device
+          grid-cols is for standard desktop devices, while sm:fird-cols is used for smaller devices */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Date */}
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                Datum *
+              </label>
+              <input
+                // type="date" is a native HTML5 calendar input field allowing for a much more responsive user experience
+                type="date"
+                id="date"
+                name="date"
+                required
+                value={formData.date}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {/* Time */}
+            <div>
+              <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">
+                Uhrzeit *
+              </label>
+              <input
+                type="time"
+                id="time"
+                name="time"
+                required
+                value={formData.time}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            {/* Location */}
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                Raum / Ort
+              </label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="z.B. PT 3.0.42 / Zoom"
+                className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
         </div>
-      </form>.
-    </main>
+        {/* Attendees */}
+        <div>
+          <label htmlFor="attendees" className="block text-sm font-medium text-gray-700 mb-1">
+            Teilnehmer
+          </label>
+          <input
+            type="text"
+            id="attendees"
+            name="attendees"
+            value={formData.attendees}
+            onChange={handleChange}
+            placeholder="z.B. Dr. Nils Hellwig, Max Mustermann"
+            className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </form>
+    </main >
   )
 }
 
