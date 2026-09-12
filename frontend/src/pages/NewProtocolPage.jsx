@@ -147,25 +147,25 @@ function NewProtocolPage() {
               />
             </div>
           </div>
-        </div>
-        {/* Attendees */}
-        <div>
-          <label htmlFor="attendees" className="block text-sm font-medium text-gray-700 mb-1">
-            Teilnehmer
-          </label>
-          <input
-            type="text"
-            id="attendees"
-            name="attendees"
-            value={formData.attendees}
-            onChange={handleChange}
-            placeholder="z.B. Dr. Nils Hellwig, Max Mustermann"
-            className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          {/* Attendees */}
+          <div>
+            <label htmlFor="attendees" className="block text-sm font-medium text-gray-700 mb-1">
+              Teilnehmer
+            </label>
+            <input
+              type="text"
+              id="attendees"
+              name="attendees"
+              value={formData.attendees}
+              onChange={handleChange}
+              placeholder="z.B. Dr. Nils Hellwig, Max Mustermann"
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
         {/* Next up: Inhalte und Vereinbarungen  */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-          <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3 flex items-center">
+          <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
             <span>Inhalte & Vereinbarungen</span>
           </h2>
@@ -186,22 +186,41 @@ function NewProtocolPage() {
             />
           </div>
           {/* Next up: Relevant Notes (Textarea) */}
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notizen
-          </label>
-          {/* // TextArea is commonly used for bigger text inputs, f.e.: comments
+          <div>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+              Notizen
+            </label>
+            {/* // TextArea is commonly used for bigger text inputs, f.e.: comments
         // rows defines the standardized height of the textarea */}
-          <textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            value={formData.notes}
-            onChange={handleChange}
-            placeholder="z.B. Thomas ist ein absoluter Nerd und spielt Age of Empires 24/7"
-            // resize-y allows the user to resize the textarea, but only vertically
-            // This makes for a good design compromize 
-            className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-          />
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              value={formData.notes}
+              onChange={handleChange}
+              placeholder="z.B. Thomas ist ein absoluter Nerd und spielt Age of Empires 24/7"
+              // resize-y allows the user to resize the textarea, but only vertically
+              // This makes for a good design compromize 
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+          </div>
+          {/* Next up: Todos */}
+          <div>
+            <label htmlFor="todos" className="block text-sm font-medium text-gray-700 mb-1">
+              Vereinbarte Aufgaben & ToDos
+            </label>
+            <textarea
+              id="todos"
+              // Same as above, but this time for the todos field
+              name="todos"
+              rows={3}
+              value={formData.todos}
+              onChange={handleChange}
+              placeholder="Thomas soll eine Präsentation über Age of Empires halten"
+              // Same Layout as above, but this time for the todos field
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+          </div>
         </div>
       </form >
     </main >
