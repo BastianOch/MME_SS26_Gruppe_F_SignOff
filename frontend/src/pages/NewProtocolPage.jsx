@@ -222,6 +222,42 @@ function NewProtocolPage() {
             />
           </div>
         </div>
+        {/* Lets build our third card: Action button & release option
+        Again we use flex-col and sm:flex-row to account for all devices */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Adding a checkbox to release the protocol directly */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              id="signDirectly"
+              name="signDirectly"
+              checked={formData.signDirectly}
+              onChange={handleChange}
+              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Direkt als signiert / freigegeben markieren
+            </span>
+          </label>
+          {/* Save Button and Cancel Button */}
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            {/* Abbrechen: Takes you back to the overview without saving */}
+            <Link
+              to="/protokolle"
+              className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+            >
+              Abbrechen
+            </Link>
+            {/* Speichern: type="submit" triggers onSubmit={handleSubmit} meaning that the protocol gets saved */}
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>Protokoll speichern</span>
+            </button>
+          </div>
+        </div>
       </form >
     </main >
   )
