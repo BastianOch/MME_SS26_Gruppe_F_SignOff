@@ -1,3 +1,16 @@
+import { useState } from 'react'
+import {
+  CheckSquare,
+  Plus,
+  Calendar,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  Filter,
+  Tag,
+  ArrowRight
+} from 'lucide-react'
+
 function TasksBoardPage() {
   return (
     <main>
