@@ -48,8 +48,29 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
+
+    // Maximale Dateigröße: 10 MB
     limits: {
         fileSize: 10 * 1024 * 1024
+    },
+
+    // Nur PDF- und DOCX-Dateien erlauben
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ];
+
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            const error = new Error(
+                "Nur PDF- und DOCX-Dateien sind erlaubt."
+            );
+
+            error.code = "INVALID_FILE_TYPE";
+            cb(error);
+        }
     }
 });
 
@@ -1236,6 +1257,12 @@ app.use((error, req, res, next) => {
     ) {
         return res.status(400).json({
             message: "Die Datei ist zu groß. Maximal 10 MB sind erlaubt."
+        });
+    }
+
+    if (error.code === "INVALID_FILE_TYPE") {
+        return res.status(400).json({
+            message: "Nur PDF- und DOCX-Dateien sind erlaubt."
         });
     }
 
