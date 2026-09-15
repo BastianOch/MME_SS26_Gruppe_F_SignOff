@@ -47,7 +47,10 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-    storage: storage
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    }
 });
 
 
@@ -1224,6 +1227,20 @@ app.post(
         }
     }
 );
+
+// Fehlerbehandlung für Datei-Uploads
+app.use((error, req, res, next) => {
+    if (
+        error instanceof multer.MulterError &&
+        error.code === "LIMIT_FILE_SIZE"
+    ) {
+        return res.status(400).json({
+            message: "Die Datei ist zu groß. Maximal 10 MB sind erlaubt."
+        });
+    }
+
+    next(error);
+});
 
 // Startet den Server auf Port 3000
 app.listen(3000, () => {
