@@ -833,6 +833,296 @@ app.delete("/api/signoffs/:id", async (req, res) => {
     }
 });
 
+// Gibt alle Dokumente aus der PostgreSQL-Datenbank zurück
+app.get("/api/documents", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM documents ORDER BY created_at ASC"
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokumente konnten nicht geladen werden."
+        });
+    }
+});
+
+// Erstellt ein neues Dokument und speichert es in PostgreSQL
+app.post("/api/documents", async (req, res) => {
+    const {
+        projectId,
+        title
+    } = req.body;
+
+    // Pflichtfelder prüfen
+    if (!projectId || !title) {
+        return res.status(400).json({
+            message: "Bitte alle Pflichtfelder ausfüllen."
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO documents
+            (project_id, title)
+            VALUES ($1, $2)
+            RETURNING *`,
+            [
+                projectId,
+                title
+            ]
+        );
+
+        res.status(201).json({
+            message: "Dokument wurde erstellt.",
+            document: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        if (error.code === "23503") {
+            return res.status(400).json({
+                message: "Projekt existiert nicht."
+            });
+        }
+
+        res.status(500).json({
+            message: "Dokument konnte nicht erstellt werden."
+        });
+    }
+});
+
+// Gibt ein einzelnes Dokument anhand seiner ID zurück
+app.get("/api/documents/:id", async (req, res) => {
+    const documentId = req.params.id;
+
+    try {
+        const result = await pool.query(
+            "SELECT * FROM documents WHERE id = $1",
+            [documentId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Dokument nicht gefunden."
+            });
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokument konnte nicht geladen werden."
+        });
+    }
+});
+
+// Aktualisiert ein bestehendes Dokument
+app.patch("/api/documents/:id", async (req, res) => {
+    const documentId = req.params.id;
+
+    const {
+        title
+    } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE documents
+            SET
+                title = COALESCE($1, title)
+            WHERE id = $2
+            RETURNING *`,
+            [
+                title,
+                documentId
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Dokument nicht gefunden."
+            });
+        }
+
+        res.json({
+            message: "Dokument wurde aktualisiert.",
+            document: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokument konnte nicht aktualisiert werden."
+        });
+    }
+});
+
+// Löscht ein Dokument anhand seiner ID
+app.delete("/api/documents/:id", async (req, res) => {
+    const documentId = req.params.id;
+
+    try {
+        const result = await pool.query(
+            "DELETE FROM documents WHERE id = $1 RETURNING *",
+            [documentId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Dokument nicht gefunden."
+            });
+        }
+
+        res.json({
+            message: "Dokument wurde gelöscht.",
+            document: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokument konnte nicht gelöscht werden."
+        });
+    }
+});
+
+// Gibt alle Dokumentversionen aus der PostgreSQL-Datenbank zurück
+app.get("/api/document-versions", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM document_versions ORDER BY created_at ASC"
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokumentversionen konnten nicht geladen werden."
+        });
+    }
+});
+
+// Erstellt eine neue Version eines Dokuments
+app.post("/api/document-versions", async (req, res) => {
+    const {
+        documentId,
+        meetingId,
+        uploaderId,
+        filePath
+    } = req.body;
+
+    // Pflichtfelder prüfen
+    if (!documentId || !uploaderId || !filePath) {
+        return res.status(400).json({
+            message: "Bitte alle Pflichtfelder ausfüllen."
+        });
+    }
+
+    try {
+        // Nächste Versionsnummer für dieses Dokument bestimmen
+        const versionResult = await pool.query(
+            `SELECT COALESCE(MAX(version_number), 0) + 1 AS next_version
+             FROM document_versions
+             WHERE document_id = $1`,
+            [documentId]
+        );
+
+        const nextVersion = versionResult.rows[0].next_version;
+
+        // Neue Dokumentversion speichern
+        const result = await pool.query(
+            `INSERT INTO document_versions
+            (document_id, meeting_id, uploader_id, version_number, file_path)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *`,
+            [
+                documentId,
+                meetingId || null,
+                uploaderId,
+                nextVersion,
+                filePath
+            ]
+        );
+
+        res.status(201).json({
+            message: "Dokumentversion wurde erstellt.",
+            documentVersion: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        if (error.code === "23503") {
+            return res.status(400).json({
+                message: "Dokument, Meeting oder Benutzer existiert nicht."
+            });
+        }
+
+        res.status(500).json({
+            message: "Dokumentversion konnte nicht erstellt werden."
+        });
+    }
+});
+
+// Gibt alle Versionen eines bestimmten Dokuments zurück
+app.get("/api/documents/:id/versions", async (req, res) => {
+    const documentId = req.params.id;
+
+    try {
+        const result = await pool.query(
+            `SELECT * FROM document_versions
+             WHERE document_id = $1
+             ORDER BY version_number ASC`,
+            [documentId]
+        );
+
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokumentversionen konnten nicht geladen werden."
+        });
+    }
+});
+
+// Gibt eine einzelne Dokumentversion anhand ihrer ID zurück
+app.get("/api/document-versions/:id", async (req, res) => {
+    const versionId = req.params.id;
+
+    try {
+        const result = await pool.query(
+            "SELECT * FROM document_versions WHERE id = $1",
+            [versionId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Dokumentversion nicht gefunden."
+            });
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokumentversion konnte nicht geladen werden."
+        });
+    }
+});
+
 // Startet den Server auf Port 3000
 app.listen(3000, () => {
     console.log("Server läuft auf Port 3000");
