@@ -10,11 +10,45 @@ const pool = require("./db");
 // Express-Anwendung erstellen
 const app = express();
 
+// Für die Dokumente 
+const multer = require("multer");
+const path = require("path");
+
+
+
 // CORS aktivieren
 app.use(cors());
 
 // Erlaubt dem Server, JSON-Daten aus Requests zu lesen
 app.use(express.json());
+
+// Macht hochgeladene Dateien über /uploads erreichbar
+app.use(
+    "/uploads",
+    express.static(path.join(__dirname, "uploads"))
+);
+
+// Legt fest, wo hochgeladene Dateien gespeichert werden
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, "uploads"));
+    },
+
+    filename: (req, file, cb) => {
+        // Sonderzeichen im Dateinamen ersetzen
+        const safeName = file.originalname.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+        );
+
+        // Zeitstempel verhindert, dass Dateien mit gleichem Namen überschrieben werden
+        cb(null, `${Date.now()}-${safeName}`);
+    }
+});
+
+const upload = multer({
+    storage: storage
+});
 
 
 // Test-Endpunkt zum Prüfen, ob das Backend läuft
@@ -1122,6 +1156,74 @@ app.get("/api/document-versions/:id", async (req, res) => {
         });
     }
 });
+
+// Lädt eine Datei hoch und erstellt dafür eine neue Dokumentversion
+app.post(
+    "/api/document-versions/upload",
+    upload.single("file"),
+    async (req, res) => {
+        const {
+            documentId,
+            meetingId,
+            uploaderId
+        } = req.body;
+
+        // Pflichtfelder prüfen
+        if (!documentId || !uploaderId || !req.file) {
+            return res.status(400).json({
+                message: "Dokument, Benutzer und Datei sind erforderlich."
+            });
+        }
+
+        try {
+            // Nächste Versionsnummer bestimmen
+            const versionResult = await pool.query(
+                `SELECT COALESCE(MAX(version_number), 0) + 1 AS next_version
+                 FROM document_versions
+                 WHERE document_id = $1`,
+                [documentId]
+            );
+
+            const nextVersion = versionResult.rows[0].next_version;
+
+            // Pfad der hochgeladenen Datei
+            const filePath = `/uploads/${req.file.filename}`;
+
+            // Neue Dokumentversion in PostgreSQL speichern
+            const result = await pool.query(
+                `INSERT INTO document_versions
+                (document_id, meeting_id, uploader_id, version_number, file_path)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING *`,
+                [
+                    documentId,
+                    meetingId || null,
+                    uploaderId,
+                    nextVersion,
+                    filePath
+                ]
+            );
+
+            res.status(201).json({
+                message: "Datei wurde hochgeladen und Dokumentversion erstellt.",
+                documentVersion: result.rows[0]
+            });
+
+        } catch (error) {
+            console.error(error);
+
+            if (error.code === "23503") {
+                return res.status(400).json({
+                    message: "Dokument, Meeting oder Benutzer existiert nicht."
+                });
+            }
+
+            res.status(500).json({
+                message: "Datei konnte nicht hochgeladen werden."
+            });
+        }
+    }
+);
 
 // Startet den Server auf Port 3000
 app.listen(3000, () => {
