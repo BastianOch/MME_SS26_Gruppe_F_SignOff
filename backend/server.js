@@ -1069,6 +1069,29 @@ app.get("/api/document-versions", async (req, res) => {
     }
 });
 
+app.get("/api/meetings/:id/document-versions", async (req, res) => {
+    const meetingId = req.params.id;
+
+    try {
+        const result = await pool.query(
+            `SELECT * FROM document_versions
+             WHERE meeting_id = $1
+             ORDER BY created_at ASC`,
+            [meetingId]
+        );
+
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Dokumentversionen des Meetings konnten nicht geladen werden."
+        });
+    }
+});
+
+
 // Erstellt eine neue Version eines Dokuments
 app.post("/api/document-versions", async (req, res) => {
     const {
