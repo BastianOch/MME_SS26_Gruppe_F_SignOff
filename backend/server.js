@@ -278,8 +278,16 @@ app.get("/api/test", (req, res) => {
 // Gibt alle Meetings aus der PostgreSQL-Datenbank zurück
 app.get("/api/meetings", authenticateToken, async (req, res) => {
     try {
+        const userId = req.user.userId;
+
         const result = await pool.query(
-            "SELECT * FROM meetings ORDER BY date ASC"
+            `SELECT m.*
+     FROM meetings m
+     JOIN project_members pm
+       ON pm.project_id = m.project_id
+     WHERE pm.user_id = $1
+     ORDER BY m.date ASC`,
+            [userId]
         );
 
         res.json(result.rows);
@@ -402,11 +410,20 @@ app.get("/api/db-test", async (req, res) => {
 // Gibt ein einzelnes Meeting anhand seiner ID zurück
 app.get("/api/meetings/:id", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "SELECT * FROM meetings WHERE id = $1",
-            [meetingId]
+            `SELECT m.*
+     FROM meetings m
+     JOIN project_members pm
+       ON pm.project_id = m.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+            [
+                meetingId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
@@ -428,6 +445,7 @@ app.get("/api/meetings/:id", authenticateToken, async (req, res) => {
 // Aktualisiert ein bestehendes Meeting
 app.patch("/api/meetings/:id", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
+    const userId = req.user.userId;
 
     const {
         title,
@@ -446,6 +464,24 @@ app.patch("/api/meetings/:id", authenticateToken, async (req, res) => {
     }
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Meetings gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN meetings m ON m.project_id = pm.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+            [
+                meetingId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Meetings."
+            });
+        }
         const result = await pool.query(
             `UPDATE meetings
             SET
@@ -489,8 +525,27 @@ app.patch("/api/meetings/:id", authenticateToken, async (req, res) => {
 // Löscht ein Meeting anhand seiner ID
 app.delete("/api/meetings/:id", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
-
+    const userId = req.user.userId;
     try {
+
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Meetings gehört
+const memberCheck = await pool.query(
+    `SELECT pm.id
+     FROM project_members pm
+     JOIN meetings m ON m.project_id = pm.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+    [
+        meetingId,
+        userId
+    ]
+);
+
+if (memberCheck.rows.length === 0) {
+    return res.status(403).json({
+        message: "Du bist kein Mitglied des Projekts dieses Meetings."
+    });
+}
         const result = await pool.query(
             "DELETE FROM meetings WHERE id = $1 RETURNING *",
             [meetingId]
@@ -516,14 +571,23 @@ app.delete("/api/meetings/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// Gibt alle Tasks aus der PostgreSQL-Datenbank zurück
+// Gibt nur Tasks aus Projekten zurück, bei denen der Benutzer Mitglied ist
 app.get("/api/tasks", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
     try {
         const result = await pool.query(
-            "SELECT * FROM tasks ORDER BY deadline ASC"
+            `SELECT t.*
+             FROM tasks t
+             JOIN project_members pm
+               ON pm.project_id = t.project_id
+             WHERE pm.user_id = $1
+             ORDER BY t.deadline ASC`,
+            [userId]
         );
 
         res.json(result.rows);
+
     } catch (error) {
         console.error(error);
 
@@ -639,11 +703,20 @@ app.post("/api/tasks", authenticateToken, async (req, res) => {
 // Gibt einen einzelnen Task anhand seiner ID zurück
 app.get("/api/tasks/:id", authenticateToken, async (req, res) => {
     const taskId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "SELECT * FROM tasks WHERE id = $1",
-            [taskId]
+            `SELECT t.*
+     FROM tasks t
+     JOIN project_members pm
+       ON pm.project_id = t.project_id
+     WHERE t.id = $1
+       AND pm.user_id = $2`,
+            [
+                taskId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
