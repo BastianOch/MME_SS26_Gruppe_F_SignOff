@@ -298,7 +298,6 @@ app.get("/api/meetings", authenticateToken, async (req, res) => {
 app.post("/api/meetings", authenticateToken, async (req, res) => {
     const {
         projectId,
-        createdById,
         title,
         date,
         notes,
@@ -306,8 +305,11 @@ app.post("/api/meetings", authenticateToken, async (req, res) => {
         status
     } = req.body;
 
+    // Ersteller kommt aus dem eingeloggten JWT-Token
+    const createdById = req.user.userId;
+
     // Prüft, ob alle Pflichtfelder vorhanden sind
-    if (!projectId || !createdById || !title || !date || !status) {
+    if (!projectId || !title || !date || !status) {
         return res.status(400).json({
             message: "Bitte alle Pflichtfelder ausfüllen."
         });
@@ -323,6 +325,24 @@ app.post("/api/meetings", authenticateToken, async (req, res) => {
     }
 
     try {
+
+        // Prüfen, ob der eingeloggte Benutzer Mitglied des Projekts ist
+        const memberCheck = await pool.query(
+            `SELECT id
+     FROM project_members
+     WHERE project_id = $1
+       AND user_id = $2`,
+            [
+                projectId,
+                createdById
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied dieses Projekts."
+            });
+        }
         const result = await pool.query(
             `INSERT INTO meetings
             (project_id, created_by_id, title, date, notes, feedback, status)
@@ -515,6 +535,8 @@ app.get("/api/tasks", authenticateToken, async (req, res) => {
 
 // Erstellt einen neuen Task und speichert ihn in PostgreSQL
 app.post("/api/tasks", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
     const {
         projectId,
         meetingId,
@@ -542,6 +564,42 @@ app.post("/api/tasks", authenticateToken, async (req, res) => {
     }
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer Mitglied des Projekts ist
+        const memberCheck = await pool.query(
+            `SELECT id
+     FROM project_members
+     WHERE project_id = $1
+       AND user_id = $2`,
+            [
+                projectId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied dieses Projekts."
+            });
+        }
+        // Falls ein Bearbeiter gesetzt ist, prüfen, ob er Mitglied des Projekts ist
+        if (assigneeId) {
+            const assigneeCheck = await pool.query(
+                `SELECT id
+         FROM project_members
+         WHERE project_id = $1
+           AND user_id = $2`,
+                [
+                    projectId,
+                    assigneeId
+                ]
+            );
+
+            if (assigneeCheck.rows.length === 0) {
+                return res.status(400).json({
+                    message: "Der ausgewählte Bearbeiter ist kein Mitglied dieses Projekts."
+                });
+            }
+        }
         const result = await pool.query(
             `INSERT INTO tasks
             (project_id, meeting_id, assignee_id, title, description, deadline, status)
