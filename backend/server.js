@@ -896,7 +896,7 @@ app.delete("/api/milestones/:id", authenticateToken, async (req, res) => {
 });
 
 // Gibt alle Sign-Offs aus der PostgreSQL-Datenbank zurück
-app.get("/api/signoffs", async (req, res) => {
+app.get("/api/signoffs", authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             "SELECT * FROM sign_offs ORDER BY id ASC"
@@ -913,16 +913,18 @@ app.get("/api/signoffs", async (req, res) => {
 });
 
 // Erstellt einen neuen Sign-Off und speichert ihn in PostgreSQL
-app.post("/api/signoffs", async (req, res) => {
+app.post("/api/signoffs", authenticateToken, async (req, res) => {
     const {
         milestoneId,
-        userId,
         decision,
         comment
     } = req.body;
 
+    // Benutzer kommt nun aus dem eingeloggten JWT-Token
+    const userId = req.user.userId;
+
     // Pflichtfelder prüfen
-    if (!milestoneId || !userId || !decision) {
+    if (!milestoneId || !decision) {
         return res.status(400).json({
             message: "Bitte alle Pflichtfelder ausfüllen."
         });
@@ -938,6 +940,42 @@ app.post("/api/signoffs", async (req, res) => {
     }
 
     try {
+
+        // Prüfen, ob der eingeloggte Benutzer Mitglied des Projekts ist
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN milestones m ON m.project_id = pm.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+            [
+                milestoneId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied dieses Projekts."
+            });
+        }
+        // Prüfen, ob der Benutzer diesen Milestone bereits signiert hat
+const existingSignOff = await pool.query(
+    `SELECT id
+     FROM sign_offs
+     WHERE milestone_id = $1
+       AND user_id = $2`,
+    [
+        milestoneId,
+        userId
+    ]
+);
+
+if (existingSignOff.rows.length > 0) {
+    return res.status(409).json({
+        message: "Du hast diesen Milestone bereits bestätigt."
+    });
+}
         const result = await pool.query(
             `INSERT INTO sign_offs
             (milestone_id, user_id, decision, comment, signed_at)
@@ -972,7 +1010,7 @@ app.post("/api/signoffs", async (req, res) => {
 });
 
 // Gibt einen einzelnen Sign-Off anhand seiner ID zurück
-app.get("/api/signoffs/:id", async (req, res) => {
+app.get("/api/signoffs/:id", authenticateToken, async (req, res) => {
     const signOffId = req.params.id;
 
     try {
@@ -999,8 +1037,9 @@ app.get("/api/signoffs/:id", async (req, res) => {
 });
 
 // Aktualisiert einen bestehenden Sign-Off
-app.patch("/api/signoffs/:id", async (req, res) => {
+app.patch("/api/signoffs/:id", authenticateToken, async (req, res) => {
     const signOffId = req.params.id;
+    const userId = req.user.userId;
 
     const {
         decision,
@@ -1023,11 +1062,13 @@ app.patch("/api/signoffs/:id", async (req, res) => {
                 comment = COALESCE($2, comment),
                 signed_at = CURRENT_TIMESTAMP
             WHERE id = $3
+            AND user_id = $4
             RETURNING *`,
             [
                 decision,
                 comment,
-                signOffId
+                signOffId,
+                userId
             ]
         );
 
@@ -1052,13 +1093,16 @@ app.patch("/api/signoffs/:id", async (req, res) => {
 });
 
 // Löscht einen Sign-Off anhand seiner ID
-app.delete("/api/signoffs/:id", async (req, res) => {
+app.delete("/api/signoffs/:id", authenticateToken, async (req, res) => {
     const signOffId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "DELETE FROM sign_offs WHERE id = $1 RETURNING *",
-            [signOffId]
+            "DELETE FROM sign_offs WHERE id = $1 AND user_id = $2 RETURNING *",
+            [signOffId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
