@@ -960,22 +960,22 @@ app.post("/api/signoffs", authenticateToken, async (req, res) => {
             });
         }
         // Prüfen, ob der Benutzer diesen Milestone bereits signiert hat
-const existingSignOff = await pool.query(
-    `SELECT id
+        const existingSignOff = await pool.query(
+            `SELECT id
      FROM sign_offs
      WHERE milestone_id = $1
        AND user_id = $2`,
-    [
-        milestoneId,
-        userId
-    ]
-);
+            [
+                milestoneId,
+                userId
+            ]
+        );
 
-if (existingSignOff.rows.length > 0) {
-    return res.status(409).json({
-        message: "Du hast diesen Milestone bereits bestätigt."
-    });
-}
+        if (existingSignOff.rows.length > 0) {
+            return res.status(409).json({
+                message: "Du hast diesen Milestone bereits bestätigt."
+            });
+        }
         const result = await pool.query(
             `INSERT INTO sign_offs
             (milestone_id, user_id, decision, comment, signed_at)
@@ -1126,7 +1126,7 @@ app.delete("/api/signoffs/:id", authenticateToken, async (req, res) => {
 });
 
 // Gibt alle Dokumente aus der PostgreSQL-Datenbank zurück
-app.get("/api/documents", async (req, res) => {
+app.get("/api/documents", authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             "SELECT * FROM documents ORDER BY created_at ASC"
@@ -1143,7 +1143,7 @@ app.get("/api/documents", async (req, res) => {
 });
 
 // Erstellt ein neues Dokument und speichert es in PostgreSQL
-app.post("/api/documents", async (req, res) => {
+app.post("/api/documents", authenticateToken, async (req, res) => {
     const {
         projectId,
         title
@@ -1189,7 +1189,7 @@ app.post("/api/documents", async (req, res) => {
 });
 
 // Gibt ein einzelnes Dokument anhand seiner ID zurück
-app.get("/api/documents/:id", async (req, res) => {
+app.get("/api/documents/:id", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
 
     try {
@@ -1216,7 +1216,7 @@ app.get("/api/documents/:id", async (req, res) => {
 });
 
 // Aktualisiert ein bestehendes Dokument
-app.patch("/api/documents/:id", async (req, res) => {
+app.patch("/api/documents/:id", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
 
     const {
@@ -1257,7 +1257,7 @@ app.patch("/api/documents/:id", async (req, res) => {
 });
 
 // Löscht ein Dokument anhand seiner ID
-app.delete("/api/documents/:id", async (req, res) => {
+app.delete("/api/documents/:id", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
 
     try {
@@ -1287,7 +1287,7 @@ app.delete("/api/documents/:id", async (req, res) => {
 });
 
 // Gibt alle Dokumentversionen aus der PostgreSQL-Datenbank zurück
-app.get("/api/document-versions", async (req, res) => {
+app.get("/api/document-versions", authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             "SELECT * FROM document_versions ORDER BY created_at ASC"
@@ -1303,7 +1303,7 @@ app.get("/api/document-versions", async (req, res) => {
     }
 });
 
-app.get("/api/meetings/:id/document-versions", async (req, res) => {
+app.get("/api/meetings/:id/document-versions", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
 
     try {
@@ -1327,16 +1327,18 @@ app.get("/api/meetings/:id/document-versions", async (req, res) => {
 
 
 // Erstellt eine neue Version eines Dokuments
-app.post("/api/document-versions", async (req, res) => {
+app.post("/api/document-versions", authenticateToken, async (req, res) => {
     const {
         documentId,
         meetingId,
-        uploaderId,
         filePath
     } = req.body;
 
+    // Benutzer kommt aus dem eingeloggten JWT-Token
+    const uploaderId = req.user.userId;
+
     // Pflichtfelder prüfen
-    if (!documentId || !uploaderId || !filePath) {
+    if (!documentId || !filePath) {
         return res.status(400).json({
             message: "Bitte alle Pflichtfelder ausfüllen."
         });
@@ -1389,7 +1391,7 @@ app.post("/api/document-versions", async (req, res) => {
 });
 
 // Gibt alle Versionen eines bestimmten Dokuments zurück
-app.get("/api/documents/:id/versions", async (req, res) => {
+app.get("/api/documents/:id/versions", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
 
     try {
@@ -1412,7 +1414,7 @@ app.get("/api/documents/:id/versions", async (req, res) => {
 });
 
 // Gibt eine einzelne Dokumentversion anhand ihrer ID zurück
-app.get("/api/document-versions/:id", async (req, res) => {
+app.get("/api/document-versions/:id", authenticateToken, async (req, res) => {
     const versionId = req.params.id;
 
     try {
@@ -1441,16 +1443,19 @@ app.get("/api/document-versions/:id", async (req, res) => {
 // Lädt eine Datei hoch und erstellt dafür eine neue Dokumentversion
 app.post(
     "/api/document-versions/upload",
+    authenticateToken,
     upload.single("file"),
     async (req, res) => {
         const {
             documentId,
-            meetingId,
-            uploaderId
+            meetingId
         } = req.body;
 
+        // Benutzer kommt aus dem eingeloggten JWT-Token
+        const uploaderId = req.user.userId;
+
         // Pflichtfelder prüfen
-        if (!documentId || !uploaderId || !req.file) {
+        if (!documentId || !req.file) {
             return res.status(400).json({
                 message: "Dokument, Benutzer und Datei sind erforderlich."
             });
