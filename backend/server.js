@@ -666,6 +666,7 @@ app.get("/api/tasks/:id", authenticateToken, async (req, res) => {
 // Aktualisiert einen bestehenden Task
 app.patch("/api/tasks/:id", authenticateToken, async (req, res) => {
     const taskId = req.params.id;
+    const userId = req.user.userId;
 
     const {
         assigneeId,
@@ -684,6 +685,47 @@ app.patch("/api/tasks/:id", authenticateToken, async (req, res) => {
     }
 
     try {
+
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Tasks gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN tasks t ON t.project_id = pm.project_id
+     WHERE t.id = $1
+       AND pm.user_id = $2`,
+            [
+                taskId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Tasks."
+            });
+        }
+        // Falls ein neuer Bearbeiter gesetzt wird, prüfen,
+        // ob dieser Mitglied des Projekts des Tasks ist
+        if (assigneeId) {
+            const assigneeCheck = await pool.query(
+                `SELECT pm.id
+         FROM project_members pm
+         JOIN tasks t ON t.project_id = pm.project_id
+         WHERE t.id = $1
+           AND pm.user_id = $2`,
+                [
+                    taskId,
+                    assigneeId
+                ]
+            );
+
+            if (assigneeCheck.rows.length === 0) {
+                return res.status(400).json({
+                    message: "Der ausgewählte Bearbeiter ist kein Mitglied dieses Projekts."
+                });
+            }
+        }
+
         const result = await pool.query(
             `UPDATE tasks
             SET
@@ -733,8 +775,28 @@ app.patch("/api/tasks/:id", authenticateToken, async (req, res) => {
 // Löscht einen Task anhand seiner ID
 app.delete("/api/tasks/:id", authenticateToken, async (req, res) => {
     const taskId = req.params.id;
+    const userId = req.user.userId;
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Tasks gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN tasks t ON t.project_id = pm.project_id
+     WHERE t.id = $1
+       AND pm.user_id = $2`,
+            [
+                taskId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Tasks."
+            });
+        }
+
         const result = await pool.query(
             "DELETE FROM tasks WHERE id = $1 RETURNING *",
             [taskId]
