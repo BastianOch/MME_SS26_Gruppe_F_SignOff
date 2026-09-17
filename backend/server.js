@@ -276,7 +276,7 @@ app.get("/api/test", (req, res) => {
 // Gibt aktuell vorhandene Meetings zurück
 // Momentan noch Testdaten, später kommen die Daten aus PostgreSQL
 // Gibt alle Meetings aus der PostgreSQL-Datenbank zurück
-app.get("/api/meetings", async (req, res) => {
+app.get("/api/meetings", authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             "SELECT * FROM meetings ORDER BY date ASC"
@@ -293,9 +293,9 @@ app.get("/api/meetings", async (req, res) => {
 });
 
 
-// Erstellt ein neues Meeting
+
 // Erstellt ein neues Meeting und speichert es in PostgreSQL
-app.post("/api/meetings", async (req, res) => {
+app.post("/api/meetings", authenticateToken, async (req, res) => {
     const {
         projectId,
         createdById,
@@ -380,7 +380,7 @@ app.get("/api/db-test", async (req, res) => {
 });
 
 // Gibt ein einzelnes Meeting anhand seiner ID zurück
-app.get("/api/meetings/:id", async (req, res) => {
+app.get("/api/meetings/:id", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
 
     try {
@@ -406,7 +406,7 @@ app.get("/api/meetings/:id", async (req, res) => {
 });
 
 // Aktualisiert ein bestehendes Meeting
-app.patch("/api/meetings/:id", async (req, res) => {
+app.patch("/api/meetings/:id", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
 
     const {
@@ -467,7 +467,7 @@ app.patch("/api/meetings/:id", async (req, res) => {
 });
 
 // Löscht ein Meeting anhand seiner ID
-app.delete("/api/meetings/:id", async (req, res) => {
+app.delete("/api/meetings/:id", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
 
     try {
