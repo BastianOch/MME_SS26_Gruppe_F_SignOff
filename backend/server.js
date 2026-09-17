@@ -14,6 +14,10 @@ const app = express();
 const multer = require("multer");
 const path = require("path");
 
+// Für Anmledung
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 
 
 // CORS aktivieren
@@ -27,6 +31,192 @@ app.use(
     "/uploads",
     express.static(path.join(__dirname, "uploads"))
 );
+
+// Prüft, ob ein gültiger JWT-Token mitgeschickt wurde
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({
+            message: "Kein Token vorhanden."
+        });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({
+            message: "Ungültiges Token-Format."
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+        req.user = decoded;
+
+        next();
+
+    } catch (error) {
+        return res.status(401).json({
+            message: "Token ist ungültig oder abgelaufen."
+        });
+    }
+}
+
+// Testet, ob der Benutzer mit gültigem Token authentifiziert ist
+app.get("/api/auth/me", authenticateToken, (req, res) => {
+    res.json({
+        message: "Token ist gültig.",
+        user: req.user
+    });
+});
+
+// Registriert einen neuen Benutzer
+app.post("/api/auth/register", async (req, res) => {
+    const {
+        name,
+        email,
+        password,
+        role
+    } = req.body;
+
+    // Pflichtfelder prüfen
+    if (!name || !email || !password || !role) {
+        return res.status(400).json({
+            message: "Bitte alle Pflichtfelder ausfüllen."
+        });
+    }
+
+    // Erlaubte Rollen prüfen
+    const allowedRoles = ["STUDENT", "SUPERVISOR"];
+
+    if (!allowedRoles.includes(role)) {
+        return res.status(400).json({
+            message: "Ungültige Benutzerrolle."
+        });
+    }
+
+    // Einfacher Passwort-Check
+    if (password.length < 8) {
+        return res.status(400).json({
+            message: "Das Passwort muss mindestens 8 Zeichen lang sein."
+        });
+    }
+
+    try {
+        // Passwort hashen
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const result = await pool.query(
+            `INSERT INTO users
+            (name, email, password_hash, role)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, name, email, role, created_at`,
+            [
+                name,
+                email,
+                passwordHash,
+                role
+            ]
+        );
+
+        res.status(201).json({
+            message: "Benutzer wurde registriert.",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        // PostgreSQL-Code für verletzte UNIQUE-Regel
+        if (error.code === "23505") {
+            return res.status(400).json({
+                message: "Diese E-Mail-Adresse ist bereits registriert."
+            });
+        }
+
+        res.status(500).json({
+            message: "Benutzer konnte nicht registriert werden."
+        });
+    }
+});
+
+// Meldet einen bestehenden Benutzer an
+app.post("/api/auth/login", async (req, res) => {
+    const {
+        email,
+        password
+    } = req.body;
+
+    // Pflichtfelder prüfen
+    if (!email || !password) {
+        return res.status(400).json({
+            message: "E-Mail und Passwort sind erforderlich."
+        });
+    }
+
+    try {
+        // Benutzer anhand der E-Mail suchen
+        const result = await pool.query(
+            "SELECT * FROM users WHERE email = $1",
+            [email]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                message: "E-Mail oder Passwort ist falsch."
+            });
+        }
+
+        const user = result.rows[0];
+
+        // Eingegebenes Passwort mit gespeichertem Hash vergleichen
+        const passwordMatches = await bcrypt.compare(
+            password,
+            user.password_hash
+        );
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                message: "E-Mail oder Passwort ist falsch."
+            });
+        }
+
+        // JWT-Token erstellen
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                role: user.role
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "2h"
+            }
+        );
+
+        res.json({
+            message: "Login erfolgreich.",
+            token: token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Login fehlgeschlagen."
+        });
+    }
+});
 
 // Legt fest, wo hochgeladene Dateien gespeichert werden
 const storage = multer.diskStorage({
@@ -307,7 +497,7 @@ app.delete("/api/meetings/:id", async (req, res) => {
 });
 
 // Gibt alle Tasks aus der PostgreSQL-Datenbank zurück
-app.get("/api/tasks", async (req, res) => {
+app.get("/api/tasks", authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             "SELECT * FROM tasks ORDER BY deadline ASC"
@@ -324,7 +514,7 @@ app.get("/api/tasks", async (req, res) => {
 });
 
 // Erstellt einen neuen Task und speichert ihn in PostgreSQL
-app.post("/api/tasks", async (req, res) => {
+app.post("/api/tasks", authenticateToken, async (req, res) => {
     const {
         projectId,
         meetingId,
@@ -389,7 +579,7 @@ app.post("/api/tasks", async (req, res) => {
 });
 
 // Gibt einen einzelnen Task anhand seiner ID zurück
-app.get("/api/tasks/:id", async (req, res) => {
+app.get("/api/tasks/:id", authenticateToken, async (req, res) => {
     const taskId = req.params.id;
 
     try {
@@ -416,7 +606,7 @@ app.get("/api/tasks/:id", async (req, res) => {
 });
 
 // Aktualisiert einen bestehenden Task
-app.patch("/api/tasks/:id", async (req, res) => {
+app.patch("/api/tasks/:id", authenticateToken, async (req, res) => {
     const taskId = req.params.id;
 
     const {
@@ -483,7 +673,7 @@ app.patch("/api/tasks/:id", async (req, res) => {
 });
 
 // Löscht einen Task anhand seiner ID
-app.delete("/api/tasks/:id", async (req, res) => {
+app.delete("/api/tasks/:id", authenticateToken, async (req, res) => {
     const taskId = req.params.id;
 
     try {
