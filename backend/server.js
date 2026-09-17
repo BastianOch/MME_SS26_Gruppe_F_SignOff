@@ -703,7 +703,7 @@ app.delete("/api/tasks/:id", authenticateToken, async (req, res) => {
 });
 
 // Gibt alle Milestones aus der PostgreSQL-Datenbank zurück
-app.get("/api/milestones", async (req, res) => {
+app.get("/api/milestones", authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
             "SELECT * FROM milestones ORDER BY deadline ASC"
@@ -720,7 +720,7 @@ app.get("/api/milestones", async (req, res) => {
 });
 
 // Erstellt einen neuen Milestone und speichert ihn in PostgreSQL
-app.post("/api/milestones", async (req, res) => {
+app.post("/api/milestones", authenticateToken, async (req, res) => {
     const {
         projectId,
         title,
@@ -781,7 +781,7 @@ app.post("/api/milestones", async (req, res) => {
 });
 
 // Gibt einen einzelnen Milestone anhand seiner ID zurück
-app.get("/api/milestones/:id", async (req, res) => {
+app.get("/api/milestones/:id", authenticateToken, async (req, res) => {
     const milestoneId = req.params.id;
 
     try {
@@ -808,7 +808,7 @@ app.get("/api/milestones/:id", async (req, res) => {
 });
 
 // Aktualisiert einen bestehenden Milestone
-app.patch("/api/milestones/:id", async (req, res) => {
+app.patch("/api/milestones/:id", authenticateToken, async (req, res) => {
     const milestoneId = req.params.id;
 
     const {
@@ -866,7 +866,7 @@ app.patch("/api/milestones/:id", async (req, res) => {
 });
 
 // Löscht einen Milestone anhand seiner ID
-app.delete("/api/milestones/:id", async (req, res) => {
+app.delete("/api/milestones/:id", authenticateToken, async (req, res) => {
     const milestoneId = req.params.id;
 
     try {
