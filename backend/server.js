@@ -1167,13 +1167,25 @@ app.delete("/api/milestones/:id", authenticateToken, async (req, res) => {
 });
 
 // Gibt alle Sign-Offs aus der PostgreSQL-Datenbank zurück
+// Gibt nur Sign-Offs aus Projekten zurück, bei denen der Benutzer Mitglied ist
 app.get("/api/signoffs", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
     try {
         const result = await pool.query(
-            "SELECT * FROM sign_offs ORDER BY id ASC"
+            `SELECT so.*
+             FROM sign_offs so
+             JOIN milestones m
+               ON m.id = so.milestone_id
+             JOIN project_members pm
+               ON pm.project_id = m.project_id
+             WHERE pm.user_id = $1
+             ORDER BY so.id ASC`,
+            [userId]
         );
 
         res.json(result.rows);
+
     } catch (error) {
         console.error(error);
 
@@ -1283,11 +1295,22 @@ app.post("/api/signoffs", authenticateToken, async (req, res) => {
 // Gibt einen einzelnen Sign-Off anhand seiner ID zurück
 app.get("/api/signoffs/:id", authenticateToken, async (req, res) => {
     const signOffId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "SELECT * FROM sign_offs WHERE id = $1",
-            [signOffId]
+            `SELECT so.*
+     FROM sign_offs so
+     JOIN milestones m
+       ON m.id = so.milestone_id
+     JOIN project_members pm
+       ON pm.project_id = m.project_id
+     WHERE so.id = $1
+       AND pm.user_id = $2`,
+            [
+                signOffId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
@@ -1396,14 +1419,23 @@ app.delete("/api/signoffs/:id", authenticateToken, async (req, res) => {
     }
 });
 
-// Gibt alle Dokumente aus der PostgreSQL-Datenbank zurück
+// Gibt nur Dokumente aus Projekten zurück, bei denen der Benutzer Mitglied ist
 app.get("/api/documents", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
     try {
         const result = await pool.query(
-            "SELECT * FROM documents ORDER BY created_at ASC"
+            `SELECT d.*
+             FROM documents d
+             JOIN project_members pm
+               ON pm.project_id = d.project_id
+             WHERE pm.user_id = $1
+             ORDER BY d.created_at ASC`,
+            [userId]
         );
 
         res.json(result.rows);
+
     } catch (error) {
         console.error(error);
 
@@ -1419,6 +1451,7 @@ app.post("/api/documents", authenticateToken, async (req, res) => {
         projectId,
         title
     } = req.body;
+    const userId = req.user.userId;
 
     // Pflichtfelder prüfen
     if (!projectId || !title) {
@@ -1428,6 +1461,23 @@ app.post("/api/documents", authenticateToken, async (req, res) => {
     }
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer Mitglied des Projekts ist
+        const memberCheck = await pool.query(
+            `SELECT id
+     FROM project_members
+     WHERE project_id = $1
+       AND user_id = $2`,
+            [
+                projectId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied dieses Projekts."
+            });
+        }
         const result = await pool.query(
             `INSERT INTO documents
             (project_id, title)
@@ -1462,11 +1512,20 @@ app.post("/api/documents", authenticateToken, async (req, res) => {
 // Gibt ein einzelnes Dokument anhand seiner ID zurück
 app.get("/api/documents/:id", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "SELECT * FROM documents WHERE id = $1",
-            [documentId]
+            `SELECT d.*
+     FROM documents d
+     JOIN project_members pm
+       ON pm.project_id = d.project_id
+     WHERE d.id = $1
+       AND pm.user_id = $2`,
+            [
+                documentId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
@@ -1489,12 +1548,31 @@ app.get("/api/documents/:id", authenticateToken, async (req, res) => {
 // Aktualisiert ein bestehendes Dokument
 app.patch("/api/documents/:id", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
+    const userId = req.user.userId;
 
     const {
         title
     } = req.body;
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Dokuments gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN documents d ON d.project_id = pm.project_id
+     WHERE d.id = $1
+       AND pm.user_id = $2`,
+            [
+                documentId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Dokuments."
+            });
+        }
         const result = await pool.query(
             `UPDATE documents
             SET
@@ -1530,8 +1608,27 @@ app.patch("/api/documents/:id", authenticateToken, async (req, res) => {
 // Löscht ein Dokument anhand seiner ID
 app.delete("/api/documents/:id", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
+    const userId = req.user.userId;
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Dokuments gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN documents d ON d.project_id = pm.project_id
+     WHERE d.id = $1
+       AND pm.user_id = $2`,
+            [
+                documentId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Dokuments."
+            });
+        }
         const result = await pool.query(
             "DELETE FROM documents WHERE id = $1 RETURNING *",
             [documentId]
@@ -1558,13 +1655,25 @@ app.delete("/api/documents/:id", authenticateToken, async (req, res) => {
 });
 
 // Gibt alle Dokumentversionen aus der PostgreSQL-Datenbank zurück
+// Gibt nur Dokumentversionen aus eigenen Projekten zurück
 app.get("/api/document-versions", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
     try {
         const result = await pool.query(
-            "SELECT * FROM document_versions ORDER BY created_at ASC"
+            `SELECT dv.*
+             FROM document_versions dv
+             JOIN documents d
+               ON d.id = dv.document_id
+             JOIN project_members pm
+               ON pm.project_id = d.project_id
+             WHERE pm.user_id = $1
+             ORDER BY dv.created_at ASC`,
+            [userId]
         );
 
         res.json(result.rows);
+
     } catch (error) {
         console.error(error);
 
@@ -1576,13 +1685,23 @@ app.get("/api/document-versions", authenticateToken, async (req, res) => {
 
 app.get("/api/meetings/:id/document-versions", authenticateToken, async (req, res) => {
     const meetingId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            `SELECT * FROM document_versions
-             WHERE meeting_id = $1
-             ORDER BY created_at ASC`,
-            [meetingId]
+            `SELECT dv.*
+     FROM document_versions dv
+     JOIN meetings m
+       ON m.id = dv.meeting_id
+     JOIN project_members pm
+       ON pm.project_id = m.project_id
+     WHERE dv.meeting_id = $1
+       AND pm.user_id = $2
+     ORDER BY dv.created_at ASC`,
+            [
+                meetingId,
+                userId
+            ]
         );
 
         res.json(result.rows);
@@ -1616,6 +1735,24 @@ app.post("/api/document-versions", authenticateToken, async (req, res) => {
     }
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Dokuments gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN documents d ON d.project_id = pm.project_id
+     WHERE d.id = $1
+       AND pm.user_id = $2`,
+            [
+                documentId,
+                uploaderId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Dokuments."
+            });
+        }
         // Nächste Versionsnummer für dieses Dokument bestimmen
         const versionResult = await pool.query(
             `SELECT COALESCE(MAX(version_number), 0) + 1 AS next_version
@@ -1664,13 +1801,23 @@ app.post("/api/document-versions", authenticateToken, async (req, res) => {
 // Gibt alle Versionen eines bestimmten Dokuments zurück
 app.get("/api/documents/:id/versions", authenticateToken, async (req, res) => {
     const documentId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            `SELECT * FROM document_versions
-             WHERE document_id = $1
-             ORDER BY version_number ASC`,
-            [documentId]
+            `SELECT dv.*
+     FROM document_versions dv
+     JOIN documents d
+       ON d.id = dv.document_id
+     JOIN project_members pm
+       ON pm.project_id = d.project_id
+     WHERE dv.document_id = $1
+       AND pm.user_id = $2
+     ORDER BY dv.version_number ASC`,
+            [
+                documentId,
+                userId
+            ]
         );
 
         res.json(result.rows);
@@ -1687,11 +1834,22 @@ app.get("/api/documents/:id/versions", authenticateToken, async (req, res) => {
 // Gibt eine einzelne Dokumentversion anhand ihrer ID zurück
 app.get("/api/document-versions/:id", authenticateToken, async (req, res) => {
     const versionId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "SELECT * FROM document_versions WHERE id = $1",
-            [versionId]
+            `SELECT dv.*
+     FROM document_versions dv
+     JOIN documents d
+       ON d.id = dv.document_id
+     JOIN project_members pm
+       ON pm.project_id = d.project_id
+     WHERE dv.id = $1
+       AND pm.user_id = $2`,
+            [
+                versionId,
+                userId
+            ]
         );
 
         if (result.rows.length === 0) {
@@ -1733,6 +1891,24 @@ app.post(
         }
 
         try {
+            // Prüfen, ob der eingeloggte Benutzer zum Projekt des Dokuments gehört
+            const memberCheck = await pool.query(
+                `SELECT pm.id
+     FROM project_members pm
+     JOIN documents d ON d.project_id = pm.project_id
+     WHERE d.id = $1
+       AND pm.user_id = $2`,
+                [
+                    documentId,
+                    uploaderId
+                ]
+            );
+
+            if (memberCheck.rows.length === 0) {
+                return res.status(403).json({
+                    message: "Du bist kein Mitglied des Projekts dieses Dokuments."
+                });
+            }
             // Nächste Versionsnummer bestimmen
             const versionResult = await pool.query(
                 `SELECT COALESCE(MAX(version_number), 0) + 1 AS next_version
