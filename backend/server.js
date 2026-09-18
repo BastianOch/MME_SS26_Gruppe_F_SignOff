@@ -529,23 +529,23 @@ app.delete("/api/meetings/:id", authenticateToken, async (req, res) => {
     try {
 
         // Prüfen, ob der eingeloggte Benutzer zum Projekt des Meetings gehört
-const memberCheck = await pool.query(
-    `SELECT pm.id
+        const memberCheck = await pool.query(
+            `SELECT pm.id
      FROM project_members pm
      JOIN meetings m ON m.project_id = pm.project_id
      WHERE m.id = $1
        AND pm.user_id = $2`,
-    [
-        meetingId,
-        userId
-    ]
-);
+            [
+                meetingId,
+                userId
+            ]
+        );
 
-if (memberCheck.rows.length === 0) {
-    return res.status(403).json({
-        message: "Du bist kein Mitglied des Projekts dieses Meetings."
-    });
-}
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Meetings."
+            });
+        }
         const result = await pool.query(
             "DELETE FROM meetings WHERE id = $1 RETURNING *",
             [meetingId]
@@ -897,9 +897,18 @@ app.delete("/api/tasks/:id", authenticateToken, async (req, res) => {
 
 // Gibt alle Milestones aus der PostgreSQL-Datenbank zurück
 app.get("/api/milestones", authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
     try {
         const result = await pool.query(
-            "SELECT * FROM milestones ORDER BY deadline ASC"
+            `SELECT m.*
+             FROM milestones m
+             JOIN project_members pm
+               ON pm.project_id = m.project_id
+             WHERE pm.user_id = $1
+             ORDER BY m.deadline ASC`,
+            [userId]
+
+
         );
 
         res.json(result.rows);
@@ -921,6 +930,7 @@ app.post("/api/milestones", authenticateToken, async (req, res) => {
         deadline,
         status
     } = req.body;
+    const userId = req.user.userId;
 
     // Pflichtfelder prüfen
     if (!projectId || !title || !deadline || !status) {
@@ -939,6 +949,25 @@ app.post("/api/milestones", authenticateToken, async (req, res) => {
     }
 
     try {
+
+        // Prüfen, ob der eingeloggte Benutzer Mitglied des Projekts ist
+        const memberCheck = await pool.query(
+            `SELECT id
+     FROM project_members
+     WHERE project_id = $1
+       AND user_id = $2`,
+            [
+                projectId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied dieses Projekts."
+            });
+        }
+
         const result = await pool.query(
             `INSERT INTO milestones
             (project_id, title, description, deadline, status)
@@ -976,11 +1005,21 @@ app.post("/api/milestones", authenticateToken, async (req, res) => {
 // Gibt einen einzelnen Milestone anhand seiner ID zurück
 app.get("/api/milestones/:id", authenticateToken, async (req, res) => {
     const milestoneId = req.params.id;
+    const userId = req.user.userId;
 
     try {
         const result = await pool.query(
-            "SELECT * FROM milestones WHERE id = $1",
-            [milestoneId]
+            `SELECT m.*
+     FROM milestones m
+     JOIN project_members pm
+       ON pm.project_id = m.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+            [
+                milestoneId,
+                userId
+            ]
+
         );
 
         if (result.rows.length === 0) {
@@ -1003,6 +1042,7 @@ app.get("/api/milestones/:id", authenticateToken, async (req, res) => {
 // Aktualisiert einen bestehenden Milestone
 app.patch("/api/milestones/:id", authenticateToken, async (req, res) => {
     const milestoneId = req.params.id;
+    const userId = req.user.userId;
 
     const {
         title,
@@ -1020,6 +1060,25 @@ app.patch("/api/milestones/:id", authenticateToken, async (req, res) => {
     }
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Milestones gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN milestones m ON m.project_id = pm.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+            [
+                milestoneId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Milestones."
+            });
+        }
+
         const result = await pool.query(
             `UPDATE milestones
             SET
@@ -1061,8 +1120,27 @@ app.patch("/api/milestones/:id", authenticateToken, async (req, res) => {
 // Löscht einen Milestone anhand seiner ID
 app.delete("/api/milestones/:id", authenticateToken, async (req, res) => {
     const milestoneId = req.params.id;
+    const userId = req.user.userId;
 
     try {
+        // Prüfen, ob der eingeloggte Benutzer zum Projekt des Milestones gehört
+        const memberCheck = await pool.query(
+            `SELECT pm.id
+     FROM project_members pm
+     JOIN milestones m ON m.project_id = pm.project_id
+     WHERE m.id = $1
+       AND pm.user_id = $2`,
+            [
+                milestoneId,
+                userId
+            ]
+        );
+
+        if (memberCheck.rows.length === 0) {
+            return res.status(403).json({
+                message: "Du bist kein Mitglied des Projekts dieses Milestones."
+            });
+        }
         const result = await pool.query(
             "DELETE FROM milestones WHERE id = $1 RETURNING *",
             [milestoneId]
