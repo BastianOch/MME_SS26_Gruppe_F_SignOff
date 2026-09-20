@@ -173,8 +173,87 @@ function DocumentHistoryPage() {
                 <th className="py-3.5 px-5 text-right">Aktionen</th>
               </tr>
             </thead>
-          </main >
-          )
+            {/* Adding a body to with .map() and <tbody> */}
+            <tbody className="divide-y divide-gray-100 text-gray-700">
+              {documents.map((doc) => (
+                <tr key={doc.id} className="hover:bg-blue-50/30 transition-colors">
+                  {/* Column 1: Icon + Name + Kapitel */}
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-3">
+                      {/* Red Document-Icon (PDF-Stil) */}
+                      {/* This is made using bg-red-50 text-red-600: */}
+                      <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{doc.chapter}</p>
+                      </div>
+                    </div>
+                  </td>
+                  {/* Column 2: Version with badge and a fancy Monospace font */}
+                  <td className="py-4 px-4">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 font-mono">
+                      {doc.version}
+                    </span>
+                  </td>
+                  {/* Column 3: Date and Filesize -> META Data*/}
+                  <td className="py-4 px-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                      <span>{doc.uploadedAt}</span>
+                    </div>
+                    <span className="text-[11px] text-gray-400 block mt-0.5">{doc.size}</span>
+                  </td>
+                  {/* Column 4: Sign-Off Badge (Approved / Review / Changes) */}
+                  {/* The ternary operator autmoatically renders the fitting color  */}
+                  <td className="py-4 px-4">
+                    {doc.status === 'approved' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Freigegeben
+                      </span>
+                    ) : doc.status === 'changes_requested' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                        <AlertTriangle className="w-3 h-3" />
+                        Überarbeitung
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                        <Clock className="w-3 h-3" />
+                        In Prüfung
+                      </span>
+                    )}
+                  </td>
+                  {/* Column 5: Vorschau- & Download-Buttons */}
+                  <td className="py-4 px-5 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => console.log('Vorschau:', doc.name)}
+                        className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                        title="Vorschau"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => console.log('Download:', doc.name)}
+                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        title="Download"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div >
+      </div >
+    </main >
+  )
 }
 
-          export default DocumentHistoryPage
+export default DocumentHistoryPage
