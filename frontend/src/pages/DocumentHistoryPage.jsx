@@ -148,9 +148,33 @@ function DocumentHistoryPage() {
           )}
         </div>
       )}
+      {/* Next up: Adding a table with a bunch of information inside of it */}
+      {/* Information include: Name, Version, Upload-Date + File-size, Status and actions */}
+      {/* This table structure is common across multiple Websites such as supabase.com or even gitHub */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Title row above the table */}
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">Alle Versionen & Einreichungen</h2>
+          <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg">
+            {documents.length} Dokumente
+          </span>
+        </div>
 
-    </main >
-  )
+        {/* 2. Scroll-Container -> importnat for smaller devices, such as smartphones */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
+            {/* 3. Titles for the rows) */}
+            <thead>
+              <tr className="bg-gray-50/75 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="py-3.5 px-5">Dokument / Kapitel</th>
+                <th className="py-3.5 px-4">Version</th>
+                <th className="py-3.5 px-4">Datum & Größe</th>
+                <th className="py-3.5 px-4">Sign-Off Status</th>
+                <th className="py-3.5 px-5 text-right">Aktionen</th>
+              </tr>
+            </thead>
+          </main >
+          )
 }
 
-export default DocumentHistoryPage
+          export default DocumentHistoryPage
