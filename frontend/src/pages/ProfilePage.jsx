@@ -38,6 +38,10 @@ function ProfilePage() {
     .map((word) => word[0])
     .join('')
     .toUpperCase()
+  // Calculates the remaining days before the deadline
+  const deadlineDate = new Date(profileData.submissionDeadline)
+  const today = new Date()
+  const daysRemaining = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24))
   return (
     // Setting up a basic layout structure
     // space-y-8 establishes a 32px gap between the different cards
@@ -90,6 +94,64 @@ function ProfilePage() {
           </div>
         </div>
       </div >
+      {/* Card 2: Mentoring and project*/}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-blue-600" />
+            <span>Bachelorarbeit & Betreuung</span>
+          </h2>
+          {/* Frist-Badge and Countdown */}
+          {/* Dynamic Deadline Badge: Uses Math.ceil() calculation from above to show remaining days */}
+          {/* Ternary condition checks if deadline is still in the future or already passed */}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+            <Calendar className="w-3.5 h-3.5" />
+            Noch {daysRemaining > 0 ? `${daysRemaining} Tage` : 'Abgegeben'}
+          </span>
+        </div>
+        {/* Thesistitle*/}
+        {/* Thesis Title Box: border-l-4 creates a prominent 4px blue accent border on the left */}
+        {/* leading-relaxed provides optimal line-height for long multi-line thesis titles */}
+        <div className="p-4 bg-blue-50/50 border-l-4 border-blue-600 rounded-r-xl">
+          <span className="text-xs font-bold text-blue-900 uppercase tracking-wider block mb-1">
+            Offizieller Arbeitstitel
+          </span>
+          <p className="text-sm font-semibold text-gray-900 leading-relaxed">
+            {profileData.thesisTitle}
+          </p>
+        </div>
+        {/* Grid: Mentor, Starting date & due date */}
+        {/* Responsive 3-Column Grid: Stacks vertically on mobile (grid-cols-1) and expands to 3 columns on tablet/desktop (sm:grid-cols-3) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+          {/* Mentee */}
+          <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-100">
+            <span className="text-xs text-gray-500 block">Erstprüfer / Betreuer</span>
+            <span className="text-sm font-semibold text-gray-900 mt-1 flex items-center gap-1.5">
+              <User className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>{profileData.supervisor}</span>
+            </span>
+          </div>
+
+          {/* Login-Date */}
+          <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-100">
+            <span className="text-xs text-gray-500 block">Offizieller Beginn</span>
+            <span className="text-sm font-semibold text-gray-900 mt-1 flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+              <span>{profileData.startDate}</span>
+            </span>
+          </div>
+          {/* Due date */}
+          {/* Submission Deadline: Highlighted with text-red-600 & Calendar icon to signal urgency */}
+          <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-100">
+            <span className="text-xs text-gray-500 block">Abgabetermin</span>
+            <span className="text-sm font-semibold text-red-600 mt-1 flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-red-500 shrink-0" />
+              <span>{profileData.submissionDeadline}</span>
+            </span>
+          </div>
+        </div>
+      </div>
     </main >
   )
 }
