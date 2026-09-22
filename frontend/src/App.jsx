@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router'
-import Sidebar from './components/Sidebar'
+import Sidebar from './components/sidebar'
 import DashboardPage from './pages/DashboardPage'
 import ProfilePage from './pages/ProfilePage'
 import NewProtocolPage from './pages/NewProtocolPage'
