@@ -14,6 +14,9 @@ import {
 function TasksBoardPage() {
   const [tasks, setTasks] = useState([]);
   const [activeFilter, setActiveFilter] = useState("all");
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDeadline, setNewTaskDeadline] = useState("");
   useEffect(() => {
     const loadTasks = async () => {
       const token = localStorage.getItem("token");
@@ -74,11 +77,22 @@ function TasksBoardPage() {
 
     if (!task) return;
 
-    const newFrontendStatus =
-      task.status === "completed" ? "open" : "completed";
+    let newFrontendStatus;
+
+    if (task.status === "open") {
+      newFrontendStatus = "in_progress";
+    } else if (task.status === "in_progress") {
+      newFrontendStatus = "completed";
+    } else {
+      newFrontendStatus = "open";
+    }
 
     const newBackendStatus =
-      newFrontendStatus === "completed" ? "DONE" : "OPEN";
+      newFrontendStatus === "open"
+        ? "OPEN"
+        : newFrontendStatus === "in_progress"
+          ? "IN_PROGRESS"
+          : "DONE";
 
     const token = localStorage.getItem("token");
 
@@ -109,6 +123,77 @@ function TasksBoardPage() {
       ),
     );
   };
+
+  const createTask = async () => {
+    if (!newTaskTitle.trim()) {
+      alert("Bitte einen Titel eingeben.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch("http://localhost:3000/api/tasks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        projectId: 1,
+        title: newTaskTitle,
+        deadline: newTaskDeadline || null,
+        status: "OPEN",
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Task konnte nicht erstellt werden.");
+      return;
+    }
+
+    const data = await response.json();
+    const task = data.task;
+
+    setTasks((prevTasks) => [
+      ...prevTasks,
+      {
+        id: task.id,
+        title: task.title,
+        status: "open",
+        dueDate: task.deadline ? task.deadline.slice(0, 10) : "Keine Deadline",
+        meeting: task.meeting_id
+          ? `Meeting ${task.meeting_id}`
+          : "Kein Meeting",
+      },
+    ]);
+
+    setNewTaskTitle("");
+    setNewTaskDeadline("");
+    setShowTaskForm(false);
+  };
+
+  const deleteTask = async (taskId) => {
+    const confirmed = window.confirm("Aufgabe wirklich löschen?");
+
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`http://localhost:3000/api/tasks/${taskId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Task konnte nicht gelöscht werden.");
+      return;
+    }
+
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+  };
+
   return (
     //
     <main className="flex-1 overflow-y-auto p-6 md:p-10 max-w-6xl">
@@ -197,13 +282,55 @@ function TasksBoardPage() {
         </div>
         {/* Button: Neue Aufgabe anlegen */}
         <button
-          onClick={() => console.log("Neue Aufgabe anlegen geklickt")}
+          onClick={() => setShowTaskForm(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Neue Aufgabe</span>
         </button>
       </div>
+      {showTaskForm && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Neue Aufgabe
+          </h2>
+
+          <div className="flex flex-col gap-4">
+            <input
+              type="text"
+              placeholder="Titel der Aufgabe"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+
+            <input
+              type="date"
+              value={newTaskDeadline}
+              onChange={(e) => setNewTaskDeadline(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={createTask}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
+              >
+                Speichern
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowTaskForm(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Lets add a task List working in unsion with the filter */}
       <div className="space-y-3">
         {filteredTasks.length === 0 ? (
@@ -271,7 +398,16 @@ function TasksBoardPage() {
                 </div>
               </div>
               {/* 2. Right Side: Priority Badge */}
-              {/* Priority Badges: Conditional color-coding (High = Red alert, Medium = Yellow, Low = Gray) */}
+              {/* Priority Badges: Conditional color-coding ... */}
+
+              <button
+                type="button"
+                onClick={() => deleteTask(task.id)}
+                className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg cursor-pointer"
+              >
+                Löschen
+              </button>
+
               {task.priority && (
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   {task.priority === "high" ? (
