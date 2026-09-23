@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from "react";
 import {
   CheckSquare,
   Plus,
@@ -8,65 +8,109 @@ import {
   CheckCircle2,
   Filter,
   Tag,
-  ArrowRight
-} from 'lucide-react'
+  ArrowRight,
+} from "lucide-react";
 
 function TasksBoardPage() {
-  // First of all: Lets add some mock data 
-  const initialTasks = [
-    {
-      id: 1,
-      title: 'Reworking my identity ',
-      status: 'open', // Open |in progress| completed
-      priority: 'high',// 'high' | 'medium' | 'low'
-      dueDate: '2024-06-15',
-      meeting: 'Meeting 01: Grundlagen',
-      assignedTo: 'Bastian Och',
-    },
-    {
-      id: 2,
-      title: 'Adjusting to my surroundings',
-      status: 'in_progress',
-      priority: 'high',
-      dueDate: '2024-06-20',
-      meeting: 'Meeting 02: Aufgabenverteilung',
-      assignedTo: 'Bastian Och',
-    }
-  ]
-  // State for the different tasks with a built in Filter!
-  const [tasks, setTasks] = useState(initialTasks)
-  const [activeFilter, setActiveFilter] = useState('all')
+  const [tasks, setTasks] = useState([]);
+  const [activeFilter, setActiveFilter] = useState("all");
+  useEffect(() => {
+    const loadTasks = async () => {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch("http://localhost:3000/api/tasks", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        console.error("Tasks konnten nicht geladen werden.");
+        setTasks([]);
+        return;
+      }
+      const data = await response.json();
+      setTasks(
+        data.map((task) => ({
+          id: task.id,
+          title: task.title,
+          status:
+            task.status === "OPEN"
+              ? "open"
+              : task.status === "IN_PROGRESS"
+                ? "in_progress"
+                : "completed",
+          dueDate: task.deadline
+            ? task.deadline.slice(0, 10)
+            : "Keine Deadline",
+          meeting: task.meeting_id
+            ? `Meeting ${task.meeting_id}`
+            : "Kein Meeting",
+        })),
+      );
+    };
+
+    loadTasks();
+  }, []);
+
   // Finally adding a count for the header stats
-  const totalCount = tasks.length
-  const openCount = tasks.filter((t) => t.status === 'open').length
-  const inProgressCount = tasks.filter((t) => t.status === 'in_progress').length
-  const completedCount = tasks.filter((t) => t.status === 'completed').length
+  const totalCount = tasks.length;
+  const openCount = tasks.filter((t) => t.status === "open").length;
+  const inProgressCount = tasks.filter(
+    (t) => t.status === "in_progress",
+  ).length;
+  const completedCount = tasks.filter((t) => t.status === "completed").length;
   // filtering the tasks acoording to the active filter
   // ALL shows every single task but other than that just the ones with right status
   const filteredTasks = tasks.filter((task) => {
-    if (activeFilter === 'all') return true
-    return task.status === activeFilter
-  })
+    if (activeFilter === "all") return true;
+    return task.status === activeFilter;
+  });
   // Now we add the logic to switch status between 'open' and 'completed'
   // Toggles task status between 'open' and 'completed' (Immutable State Update).
   // Uses .map() to find the matching taskId, flips its status via ternary operator,
   // and keeps all other tasks unchanged.
-  const toggleTaskStatus = (taskId) => {
+  const toggleTaskStatus = async (taskId) => {
+    const task = tasks.find((task) => task.id === taskId);
+
+    if (!task) return;
+
+    const newFrontendStatus =
+      task.status === "completed" ? "open" : "completed";
+
+    const newBackendStatus =
+      newFrontendStatus === "completed" ? "DONE" : "OPEN";
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`http://localhost:3000/api/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        status: newBackendStatus,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Task konnte nicht aktualisiert werden.");
+      return;
+    }
+
     setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            status: task.status === 'completed' ? 'open' : 'completed',
-          }
-        }
-        return task
-      }
-      )
-    )
-  }
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              status: newFrontendStatus,
+            }
+          : task,
+      ),
+    );
+  };
   return (
-    // 
+    //
     <main className="flex-1 overflow-y-auto p-6 md:p-10 max-w-6xl">
       {/* // Header with title & Stats */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -106,48 +150,54 @@ function TasksBoardPage() {
           {/* Tab: All */}
           {/* setActiveFilter gets changed on click */}
           {/* overflow-x-auto pb-1 sm:pb-0 is really importnat since it enables user with smartphone screens to scroll horizontally without destroying the layout */}
-          <button onClick={() => setActiveFilter('all')}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === 'all'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
-          >ALLE ({totalCount})
+          <button
+            onClick={() => setActiveFilter("all")}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              activeFilter === "all"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+          >
+            ALLE ({totalCount})
           </button>
 
           {/* Tab: Open */}
           <button
-            onClick={() => setActiveFilter('open')}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === 'open'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
+            onClick={() => setActiveFilter("open")}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              activeFilter === "open"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
           >
             Offen ({openCount})
           </button>
           {/* Tab: In Bearbeitung */}
           <button
-            onClick={() => setActiveFilter('in_progress')}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === 'in_progress'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
+            onClick={() => setActiveFilter("in_progress")}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              activeFilter === "in_progress"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
           >
             In Bearbeitung ({inProgressCount})
           </button>
           {/* Tab: Erledigt */}
           <button
-            onClick={() => setActiveFilter('completed')}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === 'completed'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
+            onClick={() => setActiveFilter("completed")}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+              activeFilter === "completed"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
           >
             Erledigt ({completedCount})
           </button>
         </div>
         {/* Button: Neue Aufgabe anlegen */}
         <button
-          onClick={() => console.log('Neue Aufgabe anlegen geklickt')}
+          onClick={() => console.log("Neue Aufgabe anlegen geklickt")}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -156,25 +206,30 @@ function TasksBoardPage() {
       </div>
       {/* Lets add a task List working in unsion with the filter */}
       <div className="space-y-3">
-
         {filteredTasks.length === 0 ? (
           // Starting of with an empty-state meaning there are no tasks in the filtered category
           <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
             <CheckCircle2 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm font-medium">Keine Aufgaben in dieser Kategorie vorhanden.</p>
+            <p className="text-sm font-medium">
+              Keine Aufgaben in dieser Kategorie vorhanden.
+            </p>
           </div>
         ) : (
           filteredTasks.map((task) => (
-            <div key={task.id}
-              className={`bg-white p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm hover:border-gray-300 ${task.status === 'completed'
-                ? 'border-gray-200 bg-gray-50/50 opacity-75'
-                : 'border-gray-200'
-                }`}
+            <div
+              key={task.id}
+              className={`bg-white p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm hover:border-gray-300 ${
+                task.status === "completed"
+                  ? "border-gray-200 bg-gray-50/50 opacity-75"
+                  : "border-gray-200"
+              }`}
             >
               {/* Checkbox, Title and, last but not least, the META Infos */}
               <div className="flex items-start gap-3.5">
                 {/* Lets add an interactive checkbox button */}
-                <button type="button" on onClick={() => toggleTaskStatus(task.id)}
+                <button
+                  type="button"
+                  onClick={() => toggleTaskStatus(task.id)}
                   className="mt-0.5 shrink-0 cursor-pointer focus:outline-none"
                   title="Status ändern"
                 >
@@ -182,9 +237,9 @@ function TasksBoardPage() {
     - completed: Green Checkmark
     - in_progress: Yellow Clock icon
     - open: Empty interactive checkbox square */}
-                  {task.status === 'completed' ? (
+                  {task.status === "completed" ? (
                     <CheckCircle2 className="w-5 h-5 text-green-600 hover:text-green-700 transition-colors" />
-                  ) : task.status === 'in_progress' ? (
+                  ) : task.status === "in_progress" ? (
                     <Clock className="w-5 h-5 text-yellow-600 hover:text-green-600 transition-colors" />
                   ) : (
                     <div className="w-5 h-5 rounded-md border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-colors" />
@@ -194,10 +249,11 @@ function TasksBoardPage() {
                   {/* Task title */}
                   {/* Strike-through effect: line-through & text-gray-400 visually marks completed tasks */}
                   <h3
-                    className={`text-sm font-semibold transition-all ${task.status === 'completed'
-                      ? 'line-through text-gray-400'
-                      : 'text-gray-900'
-                      }`}
+                    className={`text-sm font-semibold transition-all ${
+                      task.status === "completed"
+                        ? "line-through text-gray-400"
+                        : "text-gray-900"
+                    }`}
                   >
                     {task.title}
                   </h3>
@@ -216,28 +272,30 @@ function TasksBoardPage() {
               </div>
               {/* 2. Right Side: Priority Badge */}
               {/* Priority Badges: Conditional color-coding (High = Red alert, Medium = Yellow, Low = Gray) */}
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                {task.priority === 'high' ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    Hohe Priorität
-                  </span>
-                ) : task.priority === 'medium' ? (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-yellow-50 text-yellow-800 border border-yellow-200">
-                    Mittlere Priorität
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                    Niedrige Priorität
-                  </span>
-                )}
-              </div>
+              {task.priority && (
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  {task.priority === "high" ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Hohe Priorität
+                    </span>
+                  ) : task.priority === "medium" ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-yellow-50 text-yellow-800 border border-yellow-200">
+                      Mittlere Priorität
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                      Niedrige Priorität
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
-    </main >
-  )
+    </main>
+  );
 }
 
-export default TasksBoardPage
+export default TasksBoardPage;
