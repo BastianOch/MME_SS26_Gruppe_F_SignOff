@@ -26,11 +26,22 @@ function TasksBoardPage() {
           Authorization: `Bearer ${token}`,
         },
       });
+      if (response.status === 401) {
+        window.alert(
+          token
+            ? "Deine Sitzung ist abgelaufen oder ungültig. Bitte melde dich erneut an."
+            : "Du bist nicht angemeldet. Bitte melde dich an."
+        );
+        setTasks([]);
+        return;
+      }
+
       if (!response.ok) {
         console.error("Tasks konnten nicht geladen werden.");
         setTasks([]);
         return;
       }
+
       const data = await response.json();
       setTasks(
         data.map((task) => ({
@@ -111,17 +122,6 @@ function TasksBoardPage() {
       console.error("Task konnte nicht aktualisiert werden.");
       return;
     }
-
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              status: newFrontendStatus,
-            }
-          : task,
-      ),
-    );
   };
 
   const createTask = async () => {
@@ -237,11 +237,10 @@ function TasksBoardPage() {
           {/* overflow-x-auto pb-1 sm:pb-0 is really importnat since it enables user with smartphone screens to scroll horizontally without destroying the layout */}
           <button
             onClick={() => setActiveFilter("all")}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-              activeFilter === "all"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === "all"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
           >
             ALLE ({totalCount})
           </button>
@@ -249,33 +248,30 @@ function TasksBoardPage() {
           {/* Tab: Open */}
           <button
             onClick={() => setActiveFilter("open")}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-              activeFilter === "open"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === "open"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
           >
             Offen ({openCount})
           </button>
           {/* Tab: In Bearbeitung */}
           <button
             onClick={() => setActiveFilter("in_progress")}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-              activeFilter === "in_progress"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === "in_progress"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
           >
             In Bearbeitung ({inProgressCount})
           </button>
           {/* Tab: Erledigt */}
           <button
             onClick={() => setActiveFilter("completed")}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-              activeFilter === "completed"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-            }`}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${activeFilter === "completed"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
           >
             Erledigt ({completedCount})
           </button>
@@ -345,11 +341,10 @@ function TasksBoardPage() {
           filteredTasks.map((task) => (
             <div
               key={task.id}
-              className={`bg-white p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm hover:border-gray-300 ${
-                task.status === "completed"
-                  ? "border-gray-200 bg-gray-50/50 opacity-75"
-                  : "border-gray-200"
-              }`}
+              className={`bg-white p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm hover:border-gray-300 ${task.status === "completed"
+                ? "border-gray-200 bg-gray-50/50 opacity-75"
+                : "border-gray-200"
+                }`}
             >
               {/* Checkbox, Title and, last but not least, the META Infos */}
               <div className="flex items-start gap-3.5">
@@ -376,11 +371,10 @@ function TasksBoardPage() {
                   {/* Task title */}
                   {/* Strike-through effect: line-through & text-gray-400 visually marks completed tasks */}
                   <h3
-                    className={`text-sm font-semibold transition-all ${
-                      task.status === "completed"
-                        ? "line-through text-gray-400"
-                        : "text-gray-900"
-                    }`}
+                    className={`text-sm font-semibold transition-all ${task.status === "completed"
+                      ? "line-through text-gray-400"
+                      : "text-gray-900"
+                      }`}
                   >
                     {task.title}
                   </h3>

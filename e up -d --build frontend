@@ -1,0 +1,30 @@
+[1mdiff --git a/frontend/src/pages/TasksBoardPage.jsx b/frontend/src/pages/TasksBoardPage.jsx[m
+[1mindex 22dde30..ecc9edd 100644[m
+[1m--- a/frontend/src/pages/TasksBoardPage.jsx[m
+[1m+++ b/frontend/src/pages/TasksBoardPage.jsx[m
+[36m@@ -107,10 +107,21 @@[m [mfunction TasksBoardPage() {[m
+       }),[m
+     });[m
+ [m
+[31m-    if (!response.ok) {[m
+[31m-      console.error("Task konnte nicht aktualisiert werden.");[m
+[31m-      return;[m
+[31m-    }[m
+[32m+[m[32m   if (response.status === 401) {[m
+[32m+[m[32m  window.alert([m
+[32m+[m[32m    token[m
+[32m+[m[32m      ? "Deine Sitzung ist abgelaufen oder ungültig. Bitte melde dich erneut an."[m
+[32m+[m[32m      : "Du bist nicht angemeldet. Bitte melde dich an."[m
+[32m+[m[32m  );[m
+[32m+[m[32m  setTasks([]);[m
+[32m+[m[32m  return;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mif (!response.ok) {[m
+[32m+[m[32m  console.error("Tasks konnten nicht geladen werden.");[m
+[32m+[m[32m  setTasks([]);[m
+[32m+[m[32m  return;[m
+[32m+[m[32m}[m
+ [m
+     setTasks((prevTasks) =>[m
+       prevTasks.map((task) =>[m
