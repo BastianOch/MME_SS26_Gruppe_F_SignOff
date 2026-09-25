@@ -66,6 +66,31 @@ app.get("/api/auth/me", authenticateToken, (req, res) => {
   });
 });
 
+// Gibt die Projekte des eingeloggten Benutzers zurück
+app.get("/api/projects", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const result = await pool.query(
+      `SELECT p.*
+       FROM projects p
+       JOIN project_members pm
+         ON pm.project_id = p.id
+       WHERE pm.user_id = $1
+       ORDER BY p.id ASC`,
+      [userId],
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Projekte konnten nicht geladen werden.",
+    });
+  }
+});
+
 // Registriert einen neuen Benutzer
 app.post("/api/auth/register", async (req, res) => {
   const { name, email, password, role } = req.body;
