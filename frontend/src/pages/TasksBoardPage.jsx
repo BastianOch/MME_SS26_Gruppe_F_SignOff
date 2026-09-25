@@ -17,9 +17,29 @@ function TasksBoardPage() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDeadline, setNewTaskDeadline] = useState("");
+  const [projectId, setProjectId] = useState(null);
   useEffect(() => {
     const loadTasks = async () => {
       const token = localStorage.getItem("token");
+      const projectResponse = await fetch(
+        "http://localhost:3000/api/projects",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!projectResponse.ok) {
+        console.error("Projekt konnte nicht geladen werden.");
+        return;
+      }
+
+      const projects = await projectResponse.json();
+
+      if (projects.length > 0) {
+        setProjectId(projects[0].id);
+      }
 
       const response = await fetch("http://localhost:3000/api/tasks", {
         headers: {
@@ -129,6 +149,10 @@ function TasksBoardPage() {
       alert("Bitte einen Titel eingeben.");
       return;
     }
+    if (!projectId) {
+      alert("Kein Projekt gefunden.");
+      return;
+    }
 
     const token = localStorage.getItem("token");
 
@@ -139,7 +163,7 @@ function TasksBoardPage() {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        projectId: 1,
+        projectId: projectId,
         title: newTaskTitle,
         deadline: newTaskDeadline || null,
         status: "OPEN",
