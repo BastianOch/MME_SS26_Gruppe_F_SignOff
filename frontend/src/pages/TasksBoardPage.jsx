@@ -122,7 +122,19 @@ function TasksBoardPage() {
       console.error("Task konnte nicht aktualisiert werden.");
       return;
     }
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+            ...task,
+            status: newFrontendStatus,
+          }
+          : task,
+      ),
+    );
   };
+
+
 
   const createTask = async () => {
     if (!newTaskTitle.trim()) {
