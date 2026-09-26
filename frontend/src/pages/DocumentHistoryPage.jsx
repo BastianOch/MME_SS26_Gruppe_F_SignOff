@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from "react";
 import {
   FolderArchive,
   UploadCloud,
@@ -9,36 +9,238 @@ import {
   Download,
   Eye,
   Calendar,
-  HardDrive
-} from 'lucide-react'
+  HardDrive,
+} from "lucide-react";
 
 function DocumentHistoryPage() {
-  // Lets build some mock data to see if everything works properly 
-  const initialDocuments = [
-    {
-      id: 1,
-      name: 'Bachelorarbeit_Was_tue_ich_mit_meinem_Leben_?',
-      chapter: 'Gesamtdokument (Kapitel 1-4)',
-      version: 'v6.9',
-      uploadedAt: '2026-06-12',
-      size: '4.8 MB',
-      status: 'review', // 'approved' | 'review' | 'changes_requested'
-      reviewedBy: 'Meister Jürgen Propper',
-      feedback: 'Fassen sie sich kürzer in ihren sinnfreien Aussagen',
-    },
-    {
-      id: 2,
-      name: 'Bachelorarbeit_Was_tue_ich_mit_meinem_Leben_V2',
-      chapter: 'Kapitel 1: Stand der Lebens',
-      version: 'v1.5',
-      uploadedAt: '2028-06-01',
-      size: '1.2 MB',
-      status: 'approved',
-      reviewedBy: 'Jonathan Apelt',
-      feedback: 'FREIGEGEBN',
-    },
-  ]
-  const [documents, setDocuments] = useState(initialDocuments)
+  // Stores documents loaded from the backend
+  const [documents, setDocuments] = useState([]);
+  const [projectId, setProjectId] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const [versionDocumentId, setVersionDocumentId] = useState(null);
+  const versionInputRef = useRef(null);
+
+  const loadDocuments = async () => {
+    const token = localStorage.getItem("token");
+
+    const projectResponse = await fetch("http://localhost:3000/api/projects", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!projectResponse.ok) {
+      console.error("Projekt konnte nicht geladen werden.");
+      return;
+    }
+
+    const projects = await projectResponse.json();
+
+    if (projects.length > 0) {
+      setProjectId(projects[0].id);
+    }
+
+    const documentsResponse = await fetch(
+      "http://localhost:3000/api/documents",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!documentsResponse.ok) {
+      console.error("Dokumente konnten nicht geladen werden.");
+      return;
+    }
+
+    const versionsResponse = await fetch(
+      "http://localhost:3000/api/document-versions",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!versionsResponse.ok) {
+      console.error("Dokumentversionen konnten nicht geladen werden.");
+      return;
+    }
+
+    const documentsData = await documentsResponse.json();
+    const versionsData = await versionsResponse.json();
+
+    const combinedDocuments = documentsData
+      .flatMap((document) => {
+        const documentVersions = versionsData
+          .filter((version) => version.document_id === document.id)
+          .sort((a, b) => b.version_number - a.version_number);
+
+        return documentVersions.map((version) => {
+          return {
+            id: version.id,
+            documentId: document.id,
+            name: document.title,
+            chapter: "",
+            version: `v${version.version_number}`,
+            uploadedAt: new Date(version.created_at).toLocaleDateString(
+              "de-DE",
+            ),
+            size: "—",
+            status: "none",
+            filePath: version.file_path,
+            createdAt: version.created_at,
+          };
+        });
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    setDocuments(combinedDocuments);
+  };
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!projectId) {
+      alert("Kein Projekt gefunden.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const documentResponse = await fetch(
+      "http://localhost:3000/api/documents",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectId: projectId,
+          title: file.name,
+        }),
+      },
+    );
+
+    if (!documentResponse.ok) {
+      console.error("Dokument konnte nicht erstellt werden.");
+      return;
+    }
+
+    const documentData = await documentResponse.json();
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("documentId", documentData.document.id);
+
+    const uploadResponse = await fetch(
+      "http://localhost:3000/api/document-versions/upload",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      },
+    );
+
+    if (!uploadResponse.ok) {
+      console.error("Datei konnte nicht hochgeladen werden.");
+      return;
+    }
+
+    await loadDocuments();
+
+    event.target.value = "";
+
+    alert("Dokument wurde erfolgreich hochgeladen.");
+  };
+
+  const previewDocument = (filePath) => {
+    if (!filePath) {
+      alert("Keine Datei verfügbar.");
+      return;
+    }
+
+    window.open(`http://localhost:3000${filePath}`, "_blank");
+  };
+
+  const downloadDocument = async (filePath, fileName) => {
+    if (!filePath) {
+      alert("Keine Datei verfügbar.");
+      return;
+    }
+
+    const response = await fetch(`http://localhost:3000${filePath}`);
+
+    if (!response.ok) {
+      alert("Datei konnte nicht heruntergeladen werden.");
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName || "Dokument";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+  const selectVersionFile = (documentId) => {
+    setVersionDocumentId(documentId);
+    versionInputRef.current.click();
+  };
+
+  const uploadNewVersion = async (event) => {
+    const file = event.target.files[0];
+
+    if (!file || !versionDocumentId) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("documentId", versionDocumentId);
+
+    const response = await fetch(
+      "http://localhost:3000/api/document-versions/upload",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      },
+    );
+
+    if (!response.ok) {
+      alert("Neue Version konnte nicht hochgeladen werden.");
+      return;
+    }
+
+    await loadDocuments();
+
+    event.target.value = "";
+    setVersionDocumentId(null);
+
+    alert("Neue Version wurde hochgeladen.");
+  };
+
   return (
     <main className="flex-1 overflow-y-auto p-6 md:p-10 max-w-6xl">
       {/* Starting with the header with title and upload button */}
@@ -49,13 +251,14 @@ function DocumentHistoryPage() {
             <span>Dokumentenhistorie & Sign-Offs</span>
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Alle hochgeladenen Entwürfe, Versionsverläufe und offizielle Freigaben deiner Bachelorarbeit.
+            Alle hochgeladenen Entwürfe, Versionsverläufe und offizielle
+            Freigaben deiner Bachelorarbeit.
           </p>
         </div>
         {/* Upload Button */}
         {/* self-start & sm:self-auto once again helps with the layout on different devices */}
         <button
-          onClick={() => console.log('Neues Dokument hochladen geklickt')}
+          onClick={() => fileInputRef.current.click()}
           // inline-flex items-center gap-2 transformes the button into a flex-container and helps with the general layout
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors self-start sm:self-auto cursor-pointer"
         >
@@ -63,6 +266,20 @@ function DocumentHistoryPage() {
           <UploadCloud className="w-4 h-4" />
           <span>Dokument hochladen</span>
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <input
+          ref={versionInputRef}
+          type="file"
+          accept=".pdf,.docx"
+          onChange={uploadNewVersion}
+          className="hidden"
+        />
       </header>
       {/* Adding a hero Card: A big banner for the newest draft */}
       {/* documents.length > 0 && basically stops the app  from collapsing since this banner only gets shown if there is already a doucument there*/}
@@ -79,12 +296,12 @@ function DocumentHistoryPage() {
             {/* 3 way status badge for the mentor */}
             {/* Working with ternary operators to map a status to a badge, implementing this took quite a while */}
             <div className="flex items-center gap-2">
-              {documents[0].status === 'approved' ? (
+              {documents[0].status === "approved" ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Freigegeben durch {documents[0].reviewedBy}
                 </span>
-              ) : documents[0].status === 'changes_requested' ? (
+              ) : documents[0].status === "changes_requested" ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   Überarbeitung erforderlich
@@ -92,7 +309,7 @@ function DocumentHistoryPage() {
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
                   <Clock className="w-3.5 h-3.5" />
-                  In Prüfung durch {documents[0].reviewedBy}
+                  Noch nicht freigegeben
                 </span>
               )}
             </div>
@@ -106,10 +323,16 @@ function DocumentHistoryPage() {
                 <FileText className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-gray-900">{documents[0].name}</h2>
-                <p className="text-xs text-gray-600 mt-0.5">{documents[0].chapter}</p>
+                <h2 className="text-base font-bold text-gray-900">
+                  {documents[0].name}
+                </h2>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {documents[0].chapter}
+                </p>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
-                  <span>Version: <strong>{documents[0].version}</strong></span>
+                  <span>
+                    Version: <strong>{documents[0].version}</strong>
+                  </span>
                   <span>Größe: {documents[0].size}</span>
                   <span>Hochgeladen am: {documents[0].uploadedAt}</span>
                 </div>
@@ -119,7 +342,7 @@ function DocumentHistoryPage() {
             <div className="flex items-center gap-2 self-start md:self-auto">
               <button
                 type="button"
-                onClick={() => console.log('Vorschau:', documents[0].name)}
+                onClick={() => previewDocument(documents[0].filePath)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 shadow-xs transition-colors cursor-pointer"
               >
                 <Eye className="w-4 h-4 text-gray-500" />
@@ -127,7 +350,9 @@ function DocumentHistoryPage() {
               </button>
               <button
                 type="button"
-                onClick={() => console.log('Download:', documents[0].name)}
+                onClick={() =>
+                  downloadDocument(documents[0].filePath, documents[0].name)
+                }
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4" />
@@ -154,9 +379,11 @@ function DocumentHistoryPage() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Title row above the table */}
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-bold text-gray-900">Alle Versionen & Einreichungen</h2>
+          <h2 className="text-base font-bold text-gray-900">
+            Alle Versionen & Einreichungen
+          </h2>
           <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg">
-            {documents.length} Dokumente
+            {documents.length} Versionen
           </span>
         </div>
 
@@ -176,7 +403,10 @@ function DocumentHistoryPage() {
             {/* Adding a body to with .map() and <tbody> */}
             <tbody className="divide-y divide-gray-100 text-gray-700">
               {documents.map((doc) => (
-                <tr key={doc.id} className="hover:bg-blue-50/30 transition-colors">
+                <tr
+                  key={doc.id}
+                  className="hover:bg-blue-50/30 transition-colors"
+                >
                   {/* Column 1: Icon + Name + Kapitel */}
                   <td className="py-4 px-5">
                     <div className="flex items-center gap-3">
@@ -186,7 +416,9 @@ function DocumentHistoryPage() {
                         <FileText className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">{doc.name}</p>
+                        <p className="font-semibold text-gray-900 text-sm">
+                          {doc.name}
+                        </p>
                         <p className="text-xs text-gray-500">{doc.chapter}</p>
                       </div>
                     </div>
@@ -203,17 +435,19 @@ function DocumentHistoryPage() {
                       <Calendar className="w-3.5 h-3.5 text-gray-400" />
                       <span>{doc.uploadedAt}</span>
                     </div>
-                    <span className="text-[11px] text-gray-400 block mt-0.5">{doc.size}</span>
+                    <span className="text-[11px] text-gray-400 block mt-0.5">
+                      {doc.size}
+                    </span>
                   </td>
                   {/* Column 4: Sign-Off Badge (Approved / Review / Changes) */}
                   {/* The ternary operator autmoatically renders the fitting color  */}
                   <td className="py-4 px-4">
-                    {doc.status === 'approved' ? (
+                    {doc.status === "approved" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
                         <CheckCircle2 className="w-3 h-3" />
                         Freigegeben
                       </span>
-                    ) : doc.status === 'changes_requested' ? (
+                    ) : doc.status === "changes_requested" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
                         <AlertTriangle className="w-3 h-3" />
                         Überarbeitung
@@ -221,7 +455,7 @@ function DocumentHistoryPage() {
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
                         <Clock className="w-3 h-3" />
-                        In Prüfung
+                        Noch nicht freigegeben
                       </span>
                     )}
                   </td>
@@ -230,7 +464,15 @@ function DocumentHistoryPage() {
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
-                        onClick={() => console.log('Vorschau:', doc.name)}
+                        onClick={() => selectVersionFile(doc.documentId)}
+                        className="p-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
+                        title="Neue Version hochladen"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => previewDocument(doc.filePath)}
                         className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                         title="Vorschau"
                       >
@@ -238,7 +480,7 @@ function DocumentHistoryPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => console.log('Download:', doc.name)}
+                        onClick={() => downloadDocument(doc.filePath, doc.name)}
                         className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                         title="Download"
                       >
@@ -250,10 +492,10 @@ function DocumentHistoryPage() {
               ))}
             </tbody>
           </table>
-        </div >
-      </div >
-    </main >
-  )
+        </div>
+      </div>
+    </main>
+  );
 }
 
-export default DocumentHistoryPage
+export default DocumentHistoryPage;
