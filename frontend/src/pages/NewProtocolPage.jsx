@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
   ArrowLeft,
@@ -15,9 +15,19 @@ function NewProtocolPage() {
   const navigate = useNavigate()
 
   // State variables to hold the form data
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => {
+  const savedDraft = sessionStorage.getItem('protocolDraft')
+
+  if (savedDraft) {
+    try {
+      return JSON.parse(savedDraft)
+    } catch {
+      sessionStorage.removeItem('protocolDraft')
+    }
+  }
+
+  return {
     title: '',
-    // Default to today's date
     date: new Date().toISOString().split('T')[0],
     time: '',
     location: '',
@@ -26,7 +36,14 @@ function NewProtocolPage() {
     notes: '',
     todos: '',
     signDirectly: false,
-  })
+  }
+})
+
+  // Saves current draft in the browser tab
+useEffect(() => {
+  sessionStorage.setItem('protocolDraft', JSON.stringify(formData))
+}, [formData])
+
   // Universal function to handle changes in the form fields, updating the state accordingly. It checks the type of input (checkbox or text) and updates the corresponding state variable.
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
